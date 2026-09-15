@@ -101,12 +101,14 @@ function Platz({
           <Body style={styles.rausZeichen}>✕</Body>
         </Pressable>
       )}
-      <View style={styles.schild}>
+      {/* Haengt unter dem Kreis, ohne ihn zu verschieben: sonst rutscht eine
+          besetzte Reihe nach oben und das Feld steht schief. */}
+      <View style={styles.schild} pointerEvents="none">
         <Body numberOfLines={1} style={styles.name}>
           {nachname}
         </Body>
+        {p.schnitt !== null && <Body style={styles.punkte}>Ø {p.schnitt}</Body>}
       </View>
-      <Body style={styles.punkte}>{p.schnitt === null ? "–" : `Ø ${p.schnitt}`}</Body>
     </Pressable>
   );
 }
@@ -126,7 +128,10 @@ const styles = StyleSheet.create({
     aspectRatio: 0.78,
     borderRadius: 14,
     overflow: "hidden",
-    paddingVertical: 10,
+    // Unten mehr Luft: der Name haengt unter dem Kreis, und der Torwart steht
+    // am Rand - ohne den Platz waere sein Name abgeschnitten.
+    paddingTop: 12,
+    paddingBottom: 36,
     justifyContent: "space-between",
     backgroundColor: RASEN,
   },
@@ -166,21 +171,23 @@ const styles = StyleSheet.create({
     justifyContent: "space-evenly",
     alignItems: "center",
   },
-  slot: { alignItems: "center", width: 62 },
+  // Die Hoehe ist der Kreis, nicht der Kreis samt Namen - ein besetzter Platz
+  // muss genauso hoch sein wie ein leerer, sonst springt die Reihe.
+  slot: { alignItems: "center", width: 62, height: 42 },
   raus: {
     position: "absolute",
-    top: -2,
+    top: -4,
     right: 6,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#000000AA",
     borderWidth: 1,
     borderColor: "#FFFFFF88",
   },
-  rausZeichen: { color: "#fff", fontSize: 11, lineHeight: 14, fontWeight: "700" },
+  rausZeichen: { color: "#fff", fontSize: 10, lineHeight: 12, fontWeight: "700" },
   foto: {
     width: 42,
     height: 42,
@@ -198,14 +205,28 @@ const styles = StyleSheet.create({
     backgroundColor: "#00000022",
   },
   plus: { color: "#fff", fontSize: 20, fontWeight: "700", lineHeight: 22 },
-  schild: {
-    marginTop: 3,
-    maxWidth: 62,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 5,
-    backgroundColor: "#00000077",
+  schild: { position: "absolute", top: 45, left: -4, right: -4, alignItems: "center" },
+  // Schatten statt Plakette: auf dem Rasen liest sich der Name auch so, und
+  // der Platz bleibt so ruhig wie ein leerer.
+  name: {
+    color: "#fff",
+    // Breiter als der Platz, aber nicht bis zum Nachbarn: fuenf Abwehrspieler
+    // nebeneinander haben keine 70 Pixel fuer "Schlotterbeck".
+    maxWidth: 74,
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: "600",
+    textShadowColor: "#000000CC",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
-  name: { color: "#fff", fontSize: 11, lineHeight: 15, fontWeight: "600" },
-  punkte: { color: "#fff", fontSize: 10, lineHeight: 14, opacity: 0.85 },
+  punkte: {
+    color: "#fff",
+    fontSize: 10,
+    lineHeight: 13,
+    opacity: 0.9,
+    textShadowColor: "#000000CC",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
 });
