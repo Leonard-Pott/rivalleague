@@ -109,10 +109,13 @@ export default function SquadScreen() {
     setHinweis("");
   }
 
+  /**
+   * Drei Eintraege und keiner mehr: Android zeigt von einem Alert hoechstens
+   * drei Knoepfe, ein vierter faellt kommentarlos weg - und das waere hier
+   * ausgerechnet "Abbrechen". Aufgestellt wird deshalb auf dem Platz, nicht
+   * im Menue.
+   */
   function menue(p: SquadPlayer) {
-    const drin = startelf.includes(p.playerId);
-    const platzFrei = besetzung[p.position].length < shape[p.position];
-
     Alert.alert(
       p.name,
       `${p.team.name} · ${euro(p.marketValue)} · ${p.gesamtpunkte} Punkte${
@@ -124,26 +127,8 @@ export default function SquadScreen() {
           onPress: () =>
             router.push({ pathname: "/player/[id]", params: { id: String(p.playerId) } }),
         },
-        ...(gesperrt
-          ? []
-          : drin
-            ? [
-                {
-                  text: "Aus der Startelf nehmen",
-                  onPress: () =>
-                    setStartelf((vorher) => vorher.filter((id) => id !== p.playerId)),
-                },
-              ]
-            : platzFrei
-              ? [
-                  {
-                    text: `In die Startelf (${LABEL[p.position]})`,
-                    onPress: () => setStartelf((vorher) => [...vorher, p.playerId]),
-                  },
-                ]
-              : []),
         { text: "Zum Verkauf anbieten", onPress: () => verkaufen(p) },
-        { text: "Abbrechen", style: "cancel" as const },
+        { text: "Abbrechen", style: "cancel" },
       ],
     );
   }
@@ -287,11 +272,16 @@ export default function SquadScreen() {
         besetzung={besetzung}
         gesperrt={gesperrt}
         onLeer={setWahl}
-        onSpieler={menue}
+        onSpieler={(p) =>
+          !gesperrt && setStartelf((vorher) => vorher.filter((id) => id !== p.playerId))
+        }
+        onSpielerLang={menue}
       />
       <Body dim>
         {formation} · {startelf.length}/11 aufgestellt
-        {gesperrt ? " · eingefroren" : " · Tippen öffnet den Spieler"}
+        {gesperrt
+          ? " · eingefroren"
+          : " · Tippen nimmt vom Platz, Halten öffnet den Spieler"}
       </Body>
 
       {REIHENFOLGE.map((pos) => {

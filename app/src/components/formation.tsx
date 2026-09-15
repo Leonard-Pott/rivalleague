@@ -20,12 +20,14 @@ export function Formationsfeld({
   gesperrt,
   onLeer,
   onSpieler,
+  onSpielerLang,
 }: {
   shape: Record<Position, number>;
   besetzung: Record<Position, SquadPlayer[]>;
   gesperrt: boolean;
   onLeer: (pos: Position) => void;
   onSpieler: (p: SquadPlayer) => void;
+  onSpielerLang: (p: SquadPlayer) => void;
 }) {
   return (
     <View style={styles.platz}>
@@ -48,7 +50,12 @@ export function Formationsfeld({
           {Array.from({ length: shape[pos] }, (_, i) => {
             const p = besetzung[pos][i];
             return p ? (
-              <Platz key={p.playerId} p={p} onPress={() => onSpieler(p)} />
+              <Platz
+                key={p.playerId}
+                p={p}
+                onPress={() => onSpieler(p)}
+                onLongPress={() => onSpielerLang(p)}
+              />
             ) : (
               <Leer
                 key={`${pos}-${i}`}
@@ -63,12 +70,20 @@ export function Formationsfeld({
   );
 }
 
-function Platz({ p, onPress }: { p: SquadPlayer; onPress: () => void }) {
+function Platz({
+  p,
+  onPress,
+  onLongPress,
+}: {
+  p: SquadPlayer;
+  onPress: () => void;
+  onLongPress: () => void;
+}) {
   // Nur der Nachname: auf einem Feld mit fuenf Spielern nebeneinander ist
   // fuer mehr kein Platz, und im Fussball reicht er ohnehin.
   const nachname = p.name.split(" ").slice(-1)[0];
   return (
-    <Pressable style={styles.slot} onPress={onPress}>
+    <Pressable style={styles.slot} onPress={onPress} onLongPress={onLongPress}>
       {p.photoUrl ? (
         <Image source={{ uri: p.photoUrl }} style={styles.foto} />
       ) : (
