@@ -120,7 +120,12 @@ export default function MarktScreen() {
         />
       }
     >
-      <Title>Transfermarkt</Title>
+      <View style={styles.kopf}>
+        <View style={{ flex: 1 }}>
+          <Title>Transfermarkt</Title>
+        </View>
+        <Button label="Suche" variant="ghost" onPress={() => router.push("/suche")} />
+      </View>
       <ErrorText>{error}</ErrorText>
 
       {markt && (
@@ -244,6 +249,7 @@ export default function MarktScreen() {
 }
 
 const styles = StyleSheet.create({
+  kopf: { flexDirection: "row", alignItems: "center", gap: 12 },
   zeile: { flexDirection: "row", alignItems: "center", gap: 12 },
   gross: { fontSize: 18, fontWeight: "700" },
   name: { fontSize: 16, fontWeight: "600" },

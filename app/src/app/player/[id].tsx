@@ -11,6 +11,7 @@ import {
   ErrorText,
   Screen,
   Title,
+  useAkzent,
   useColors,
 } from "@/components/ui";
 import type { PlayerDetail } from "@/types";
@@ -27,6 +28,7 @@ export default function PlayerScreen() {
   const { token, activeLeagueId } = useSession();
   const router = useRouter();
   const c = useColors();
+  const akzent = useAkzent();
 
   const [p, setP] = useState<PlayerDetail | null>(null);
   const [error, setError] = useState("");
@@ -47,6 +49,21 @@ export default function PlayerScreen() {
       void load();
     }, [load]),
   );
+
+  async function merken() {
+    if (!p) return;
+    const neu = !p.gemerkt;
+    setP({ ...p, gemerkt: neu });
+    try {
+      await api(`/api/leagues/${activeLeagueId}/players/${p.playerId}`, {
+        token,
+        method: "PATCH",
+        body: { gemerkt: neu },
+      });
+    } catch {
+      setP({ ...p, gemerkt: !neu });
+    }
+  }
 
   if (error) {
     return (
@@ -86,6 +103,12 @@ export default function PlayerScreen() {
             {POSITION[p.position]} · {p.team.name}
           </Body>
         </View>
+        {/* Beobachten: der Spieler steht danach in der Suche ganz oben. */}
+        <Pressable onPress={merken} hitSlop={10}>
+          <Body style={[styles.stern, { color: p.gemerkt ? akzent.farbe : c.textSecondary }]}>
+            {p.gemerkt ? "★" : "☆"}
+          </Body>
+        </Pressable>
       </View>
 
       <Card>
@@ -217,6 +240,7 @@ const styles = StyleSheet.create({
   zeile: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
   foto: { width: 64, height: 64, borderRadius: 32 },
   gross: { fontSize: 18, fontWeight: "700" },
+  stern: { fontSize: 30, lineHeight: 36 },
   spiel: { flexDirection: "row", alignItems: "center", gap: 10 },
   spieltag: { width: 26, textAlign: "right" },
   name: { fontSize: 16, fontWeight: "600" },

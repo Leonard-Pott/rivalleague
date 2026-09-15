@@ -52,6 +52,7 @@ model Manager {
   values    ManagerValue[]
   kaeufe    Transfer[]      @relation("buyer")
   verkaeufe Transfer[]      @relation("seller")
+  scouting  Scouting[]
 
   @@unique([userId, leagueId])
   @@index([leagueId])
@@ -115,6 +116,7 @@ model Player {
   listings    Listing[]
   slots       LineupSlot[]
   transfers   Transfer[]
+  scouting    Scouting[]
 
   @@index([teamId])
 }
@@ -223,6 +225,19 @@ model LineupSlot {
   player    Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@unique([lineupId, playerId])
+}
+
+/// Beobachtete Spieler eines Managers. Haengt am Manager und nicht am Nutzer:
+/// wen man im Auge behaelt, haengt davon ab, wer in DIESER Liga wem gehoert.
+model Scouting {
+  id        String   @id @default(cuid())
+  managerId String
+  playerId  Int
+  createdAt DateTime @default(now())
+  manager   Manager  @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([managerId, playerId])
 }
 
 model PlayerPoints {

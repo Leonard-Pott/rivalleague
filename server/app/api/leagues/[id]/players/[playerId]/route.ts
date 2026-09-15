@@ -69,6 +69,10 @@ export const GET = handle(async (req: Request, ctx: Ctx) => {
   );
   const naechstesSpiel = spiele.find((m) => !m.finished) ?? null;
 
+  const gemerkt = await prisma.scouting.findUnique({
+    where: { managerId_playerId: { managerId: me.id, playerId } },
+  });
+
   const punkte = player.points.map((p) => p.points);
 
   return {
@@ -92,6 +96,7 @@ export const GET = handle(async (req: Request, ctx: Ctx) => {
     })),
     gesamtpunkte: punkte.reduce((s, p) => s + p, 0),
     schnitt: punkte.length ? Math.round(punkte.reduce((s, p) => s + p, 0) / punkte.length) : null,
+    gemerkt: gemerkt !== null,
     /** Ohne Vorsaisondaten ist der Startwert nur geschaetzt - das gehoert dazugesagt. */
     wertGeschaetzt: player.seedStats === null,
     besitzer: roster
@@ -123,4 +128,27 @@ export const GET = handle(async (req: Request, ctx: Ctx) => {
         }
       : null,
   };
+});
+
+/** Spieler beobachten oder nicht mehr - mehr gibt es hier nicht zu aendern. */
+export const PATCH = handle(async (req: Request, ctx: Ctx) => {
+  const { id: leagueId, playerId: raw } = await ctx.params;
+  const me = await requireManager(req, leagueId);
+
+  const playerId = Number(raw);
+  if (!Number.isInteger(playerId)) throw new HttpError(400, "Ungueltige Spieler-ID");
+
+  const { gemerkt } = (await req.json()) as { gemerkt?: boolean };
+  if (typeof gemerkt !== "boolean") throw new HttpError(400, "gemerkt fehlt");
+
+  if (gemerkt) {
+    await prisma.scouting.upsert({
+      where: { managerId_playerId: { managerId: me.id, playerId } },
+      update: {},
+      create: { managerId: me.id, playerId },
+    });
+  } else {
+    await prisma.scouting.deleteMany({ where: { managerId: me.id, playerId } });
+  }
+  return { playerId, gemerkt };
 });

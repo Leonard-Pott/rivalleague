@@ -9,7 +9,7 @@ aus den echten Spielen des Wochenendes.
   <img src="docs/screenshots/losung.png" width="200" alt="Zugeloster Startkader, Spieler für Spieler aufgedeckt">
   <img src="docs/screenshots/ranking.png" width="200" alt="Ranking mit Tabelle und Vermögensverlauf in Vereinsfarbe">
   <img src="docs/screenshots/kader.png" width="200" alt="Kader mit der Startelf auf dem Spielfeld">
-  <img src="docs/screenshots/markt.png" width="200" alt="Transfermarkt mit Angeboten">
+  <img src="docs/screenshots/markt.png" width="200" alt="Transfermarkt mit Angeboten und Suche">
   <img src="docs/screenshots/aktivitaet.png" width="200" alt="Aktivitätenfeed">
 </p>
 
@@ -42,6 +42,10 @@ aus den echten Spielen des Wochenendes.
   seine Form der letzten drei Spieltage angepasst.
 - **Aktivitätenfeed.** Alle Käufe und Verkäufe der Mitspieler und alles, was neu auf
   dem Markt liegt, in einem Zeitstrahl.
+- **Suche und Scouting.** Über dem Transfermarkt liegt eine Suche über alle Spieler
+  der Liga. Bei jedem Treffer steht, ob er noch zu haben ist: frei, auf dem Markt, im
+  eigenen Kader oder — mit Namen — im Kader eines Mitspielers. Wer interessant
+  aussieht, bekommt einen Stern und steht beim nächsten Öffnen der Suche ganz oben.
 - **Vereinswappen an jedem Spieler**, in Kader, Markt, Aufstellungsauswahl und Feed —
   von welchem Verein einer kommt, sieht man, bevor man den Namen liest.
 - **Die App in den Farben des eigenen Vereins.** Beim ersten Start wählt man seinen

@@ -138,6 +138,23 @@ export type ActivityEntry = {
 
 export type Activity = { eintraege: ActivityEntry[] };
 
+export type Treffer = {
+  playerId: number;
+  name: string;
+  position: Position;
+  photoUrl: string | null;
+  team: TeamSummary;
+  marketValue: number;
+  gesamtpunkte: number;
+  spieltage: number;
+  schnitt: number | null;
+  besitzer: { managerId: string; teamName: string; istMeiner: boolean } | null;
+  imMarkt: boolean;
+  gemerkt: boolean;
+};
+
+export type Suchergebnis = { suchbegriff: string; treffer: Treffer[] };
+
 export type PlayerDetail = {
   playerId: number;
   name: string;
@@ -156,6 +173,7 @@ export type PlayerDetail = {
   }[];
   gesamtpunkte: number;
   schnitt: number | null;
+  gemerkt: boolean;
   wertGeschaetzt: boolean;
   besitzer: {
     managerId: string;
