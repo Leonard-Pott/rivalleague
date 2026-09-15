@@ -1,16 +1,26 @@
 import { prisma } from "./db";
-import { nextMarketClose } from "./marketclock.ts";
 import {
   marktGroesse,
+  zufallsLaufzeitMs,
   planTransfers,
   type ManagerState,
   type PendingListing,
 } from "./market.ts";
 
+/** Im Schnitt ein neuer freier Spieler je Stunde. */
+export const NACHSCHUB_MS = 60 * 60 * 1000;
+
+const nachschubKey = (leagueId: string) => `market:${leagueId}`;
+
 /**
  * Fuellt den Markt mit freien Spielern auf. Braucht keinen Zeitplan: es wird
  * geprueft, wie viele Angebote offen sind, und nur die Differenz ergaenzt.
  * Damit heilt sich der Markt auch nach einem Ausfall von selbst.
+ *
+ * Nachgelegt wird getaktet - hoechstens ein Spieler je vergangener Stunde,
+ * damit ueber den Tag verteilt etwas passiert statt einmal taeglich alles.
+ * Ausnahme ist die Erstbefuellung: eine frische Liga soll sofort einen
+ * vollen Markt haben.
  */
 export async function ensureFreeAgents(
   leagueId: string,
@@ -28,7 +38,22 @@ export async function ensureFreeAgents(
     where: { leagueId, sellerId: null, resolvedAt: null },
   });
   const fehlend = ziel - offen;
-  if (fehlend <= 0) return 0;
+  const key = nachschubKey(leagueId);
+  const stand = await prisma.syncState.findUnique({ where: { key } });
+  const jetzt = new Date();
+
+  // Ein voller Markt sammelt kein Guthaben an - sonst stuenden nach einer
+  // ruhigen Nacht schlagartig zehn neue Spieler da.
+  if (fehlend <= 0) {
+    await merkeNachschub(key, jetzt);
+    return 0;
+  }
+
+  const erlaubt = stand
+    ? Math.floor((jetzt.getTime() - stand.lastRunAt.getTime()) / NACHSCHUB_MS)
+    : fehlend; // erste Befuellung der Liga
+  const nachzulegen = Math.min(fehlend, erlaubt);
+  if (nachzulegen <= 0) return 0;
 
   // Weder im Kader eines Managers noch bereits auf dem Markt.
   const kandidaten = await prisma.player.findMany({
@@ -46,8 +71,7 @@ export async function ensureFreeAgents(
     [kandidaten[i], kandidaten[j]] = [kandidaten[j], kandidaten[i]];
   }
 
-  const expiresAt = nextMarketClose(league.marketCloseHour);
-  const auswahl = kandidaten.slice(0, fehlend);
+  const auswahl = kandidaten.slice(0, nachzulegen);
 
   await prisma.listing.createMany({
     data: auswahl.map((p) => ({
@@ -55,10 +79,24 @@ export async function ensureFreeAgents(
       playerId: p.id,
       sellerId: null,
       price: p.marketValue,
-      expiresAt,
+      expiresAt: new Date(jetzt.getTime() + zufallsLaufzeitMs()),
     })),
   });
+
+  // Nur die verbrauchten Stunden gutschreiben, angebrochene zaehlen weiter.
+  await merkeNachschub(
+    key,
+    stand ? new Date(stand.lastRunAt.getTime() + auswahl.length * NACHSCHUB_MS) : jetzt,
+  );
   return auswahl.length;
+}
+
+async function merkeNachschub(key: string, lastRunAt: Date): Promise<void> {
+  await prisma.syncState.upsert({
+    where: { key },
+    update: { lastRunAt },
+    create: { key, lastRunAt },
+  });
 }
 
 export type ResolveResult = {

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { requireUser, HttpError } from "@/lib/auth";
 import { handle } from "@/lib/http";
 import { uniqueInviteCode } from "@/lib/invite";
+import { ensureFreeAgents } from "@/lib/market-db";
 
 export const POST = handle(async (req: Request) => {
   const user = await requireUser(req);
@@ -26,6 +27,10 @@ export const POST = handle(async (req: Request) => {
       budget: league.startBudget,
     },
   });
+
+  // Erste Befuellung sofort: ein leerer Markt in einer frischen Liga sieht
+  // nach einem Fehler aus, der Nachschub tropft erst danach stundenweise.
+  await ensureFreeAgents(league.id);
 
   return {
     leagueId: league.id,

@@ -14,6 +14,21 @@ export function marktGroesse(managerAnzahl: number): number {
   return Math.max(ANGEBOTE_MIN, managerAnzahl * ANGEBOTE_PRO_MANAGER);
 }
 
+/** Kuerzeste Laufzeit eines freien Angebots in Stunden. */
+export const LAUFZEIT_MIN_H = 10;
+/** Laengste Laufzeit. */
+export const LAUFZEIT_MAX_H = 40;
+
+/**
+ * Jedes Angebot bekommt seine eigene Laufzeit. Laufen alle zur selben Minute
+ * ab, schlaegt der halbe Markt auf einmal um und wer dann nicht am Handy ist,
+ * verpasst die ganze Runde.
+ */
+export function zufallsLaufzeitMs(rnd: () => number = Math.random): number {
+  const stunden = LAUFZEIT_MIN_H + rnd() * (LAUFZEIT_MAX_H - LAUFZEIT_MIN_H);
+  return Math.round(stunden * 60 * 60 * 1000);
+}
+
 export type PendingBid = {
   managerId: string;
   amount: number;

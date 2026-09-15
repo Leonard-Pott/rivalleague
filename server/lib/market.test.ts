@@ -2,6 +2,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   ANGEBOTE_MIN,
+  LAUFZEIT_MAX_H,
+  LAUFZEIT_MIN_H,
+  zufallsLaufzeitMs,
   MAX_SQUAD,
   marktGroesse,
   planTransfers,
@@ -171,4 +174,17 @@ test("Markt waechst mit der Rundengroesse, faellt aber nie unter das Minimum", (
   assert.equal(marktGroesse(2), ANGEBOTE_MIN);
   assert.equal(marktGroesse(6), 24);
   assert.ok(marktGroesse(10) > marktGroesse(6));
+});
+
+test("Laufzeiten liegen zwischen zehn und vierzig Stunden", () => {
+  const h = (ms: number) => ms / 3_600_000;
+  assert.equal(h(zufallsLaufzeitMs(() => 0)), LAUFZEIT_MIN_H);
+  assert.equal(h(zufallsLaufzeitMs(() => 1)), LAUFZEIT_MAX_H);
+  for (let i = 0; i < 50; i++) {
+    const stunden = h(zufallsLaufzeitMs());
+    assert.ok(stunden >= LAUFZEIT_MIN_H && stunden <= LAUFZEIT_MAX_H, `${stunden}`);
+  }
+  // Zwei Angebote sollen nicht zur selben Minute ablaufen.
+  const viele = new Set(Array.from({ length: 20 }, () => zufallsLaufzeitMs()));
+  assert.ok(viele.size > 1);
 });
