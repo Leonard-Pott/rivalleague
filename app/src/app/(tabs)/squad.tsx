@@ -221,10 +221,23 @@ export default function SquadScreen() {
   }
 
   /**
+   * Auf dem Platz geht es um die Aufstellung, nicht um den Spieler: wer hier
+   * tippt, will tauschen oder herausnehmen. Marktwert, Punkte, Verkauf - das
+   * steht in der Kaderliste unter dem Feld.
+   */
+  function platzMenue(p: SquadPlayer, pos: Position, index: number) {
+    if (gesperrt) return; // Spieltag laeuft, es wird nicht mehr getauscht
+    Alert.alert(p.name, `${LABEL[pos]} · Platz ${index + 1}`, [
+      { text: "Austauschen", onPress: () => setWahl({ pos, index }) },
+      { text: "Rausnehmen", onPress: () => besetze(pos, index, null) },
+      { text: "Abbrechen", style: "cancel" },
+    ]);
+  }
+
+  /**
    * Drei Eintraege und keiner mehr: Android zeigt von einem Alert hoechstens
    * drei Knoepfe, ein vierter faellt kommentarlos weg - und das waere hier
-   * ausgerechnet "Abbrechen". Aufgestellt wird deshalb auf dem Platz, nicht
-   * im Menue.
+   * ausgerechnet "Abbrechen".
    */
   function menue(p: SquadPlayer) {
     Alert.alert(
@@ -364,7 +377,7 @@ export default function SquadScreen() {
         besetzung={besetzung}
         gesperrt={gesperrt}
         onLeer={(pos, index) => setWahl({ pos, index })}
-        onSpieler={menue}
+        onSpieler={platzMenue}
         onEntfernen={(pos, index) => besetze(pos, index, null)}
       />
       <Body dim>
@@ -410,7 +423,10 @@ export default function SquadScreen() {
         <Pressable style={styles.backdrop} onPress={() => setWahl(null)} />
         <View style={[styles.sheet, { backgroundColor: c.background }]}>
           <ScrollView contentContainerStyle={styles.sheetInner}>
-            <Body style={styles.gross}>{wahl ? LABEL[wahl.pos] : ""} besetzen</Body>
+            <Body style={styles.gross}>
+              {wahl ? LABEL[wahl.pos] : ""}
+              {wahl && besetzung[wahl.pos][wahl.index] ? " austauschen" : " besetzen"}
+            </Body>
             {auswahl.length === 0 && (
               <Body dim>
                 Kein freier Spieler auf dieser Position. Kauf im Transfermarkt nach.

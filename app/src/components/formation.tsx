@@ -27,7 +27,7 @@ export function Formationsfeld({
   besetzung: Record<Position, (SquadPlayer | null)[]>;
   gesperrt: boolean;
   onLeer: (pos: Position, index: number) => void;
-  onSpieler: (p: SquadPlayer) => void;
+  onSpieler: (p: SquadPlayer, pos: Position, index: number) => void;
   onEntfernen: (pos: Position, index: number) => void;
 }) {
   return (
@@ -54,7 +54,7 @@ export function Formationsfeld({
               <Platz
                 key={`${pos}-${i}`}
                 p={p}
-                onPress={() => onSpieler(p)}
+                onPress={() => onSpieler(p, pos, i)}
                 onEntfernen={gesperrt ? null : () => onEntfernen(pos, i)}
               />
             ) : (

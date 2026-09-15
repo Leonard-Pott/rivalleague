@@ -20,10 +20,12 @@ aus den echten Spielen des Wochenendes.
 - **Aufstellung auf dem Platz.** Die Startelf steht als Formation auf einem Rasen,
   eigenes Tor unten, Angriff oben — wie die Aufstellungsgrafik einer Übertragung.
   Sieben Formationen, jeder Platz wird einzeln besetzt und die Auswahl zeigt nur
-  Spieler der passenden Position; das ✕ am Spieler nimmt ihn wieder heraus. Jede
-  Änderung geht sofort zum Server, auch die halb fertige Elf — es gibt keinen
-  Speichern-Knopf, den man vergessen kann. Darunter liegt der komplette Kader nach
-  Positionen sortiert. Mit Anpfiff des Spieltags friert die Aufstellung ein.
+  Spieler der passenden Position. Auf dem Platz geht es nur um die Aufstellung:
+  antippen heißt austauschen oder rausnehmen, das ✕ am Spieler nimmt ihn direkt
+  heraus. Jede Änderung geht sofort zum Server, auch die halb fertige Elf — es gibt
+  keinen Speichern-Knopf, den man vergessen kann. Darunter liegt der komplette Kader
+  nach Positionen sortiert, und dort stehen auch Marktwert, Punkte, Spielerdetails
+  und der Verkauf. Mit Anpfiff des Spieltags friert die Aufstellung ein.
 - **Transfermarkt mit verdeckten Geboten.** Jeder sieht nur sein eigenes Gebot.
   Über den Tag kommen laufend neue Spieler dazu, jedes Angebot hat seine eigene
   Laufzeit. Eigene Spieler bleiben auf dem Markt, bis jemand mindestens ihren
