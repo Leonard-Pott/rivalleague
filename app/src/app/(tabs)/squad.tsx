@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Image,
@@ -32,6 +32,43 @@ function shapeOf(formation: string): Record<Position, number> {
 }
 
 const REIHENFOLGE: Position[] = ["GK", "DEF", "MID", "FWD"];
+
+/**
+ * Die Aufstellung ist ein Platz je Formationsposition, nicht eine Liste von
+ * Spielern: sonst rutscht ein Spieler, den man auf den rechten Aussenposten
+ * gesetzt hat, beim Zeichnen nach links auf den ersten freien Platz.
+ */
+type Plaetze = Record<Position, (number | null)[]>;
+
+function leerePlaetze(shape: Record<Position, number>): Plaetze {
+  return {
+    GK: Array(shape.GK).fill(null),
+    DEF: Array(shape.DEF).fill(null),
+    MID: Array(shape.MID).fill(null),
+    FWD: Array(shape.FWD).fill(null),
+  };
+}
+
+/**
+ * Verteilt eine Spielerliste von links nach rechts auf die Plaetze. Der Server
+ * kennt nur die elf Spieler, nicht ihre Position im Raster - beim Laden und
+ * beim Formationswechsel ist links nach rechts die einzige sinnvolle Annahme.
+ * Wer nicht mehr passt, faellt heraus.
+ */
+function verteile(
+  ids: number[],
+  spieler: SquadPlayer[],
+  shape: Record<Position, number>,
+): Plaetze {
+  const plaetze = leerePlaetze(shape);
+  for (const id of ids) {
+    const p = spieler.find((x) => x.playerId === id);
+    if (!p) continue;
+    const frei = plaetze[p.position].indexOf(null);
+    if (frei >= 0) plaetze[p.position][frei] = id;
+  }
+  return plaetze;
+}
 const LABEL: Record<Position, string> = {
   GK: "Tor",
   DEF: "Abwehr",
@@ -47,9 +84,19 @@ export default function SquadScreen() {
   const [squad, setSquad] = useState<Squad | null>(null);
   const [lineup, setLineup] = useState<LineupState | null>(null);
   const [formation, setFormation] = useState("4-4-2");
-  const [startelf, setStartelf] = useState<number[]>([]);
-  /** Position, fuer die gerade ein Spieler gesucht wird. */
-  const [wahl, setWahl] = useState<Position | null>(null);
+  const [plaetze, setPlaetze] = useState<Plaetze>(() => leerePlaetze(shapeOf("4-4-2")));
+  /**
+   * Liga mit ungespeicherten Aenderungen an der Aufstellung.
+   *
+   * Der Bildschirm laedt bei jedem Fokus neu - ohne diese Merkung waere eine
+   * halb fertige Aufstellung weg, sobald man kurz in den Transfermarkt
+   * schaut. Beim Ligawechsel greift sie bewusst nicht: die offene Aufstellung
+   * gehoert zur anderen Liga.
+   */
+  const offenerStand = useRef<string | null>(null);
+  const [ungespeichert, setUngespeichert] = useState(false);
+  /** Platz, fuer den gerade ein Spieler gesucht wird. */
+  const [wahl, setWahl] = useState<{ pos: Position; index: number } | null>(null);
   const [error, setError] = useState("");
   const [hinweis, setHinweis] = useState("");
   const [busy, setBusy] = useState(false);
@@ -65,8 +112,12 @@ export default function SquadScreen() {
       ]);
       setSquad(s);
       setLineup(l);
-      setFormation(l.formation ?? "4-4-2");
-      setStartelf(l.startelf);
+      if (offenerStand.current !== activeLeagueId) {
+        const f = l.formation ?? "4-4-2";
+        setFormation(f);
+        setPlaetze(verteile(l.startelf, s.spieler, shapeOf(f)));
+        setUngespeichert(false);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Laden fehlgeschlagen");
     }
@@ -82,30 +133,47 @@ export default function SquadScreen() {
   const spieler = useMemo(() => squad?.spieler ?? [], [squad]);
   const gesperrt = lineup?.locked ?? false;
 
-  /** Aufgestellte Spieler je Position, in der Reihenfolge der Slots. */
+  /** Platz fuer Platz, leere bleiben leer - das Feld zeichnet genau das. */
   const besetzung = useMemo(() => {
-    const nach: Record<Position, SquadPlayer[]> = { GK: [], DEF: [], MID: [], FWD: [] };
-    for (const id of startelf) {
-      const p = spieler.find((x) => x.playerId === id);
-      if (p) nach[p.position].push(p);
+    const nach: Record<Position, (SquadPlayer | null)[]> = {
+      GK: [],
+      DEF: [],
+      MID: [],
+      FWD: [],
+    };
+    for (const pos of REIHENFOLGE) {
+      nach[pos] = plaetze[pos].map(
+        (id) => spieler.find((x) => x.playerId === id) ?? null,
+      );
     }
     return nach;
-  }, [spieler, startelf]);
+  }, [spieler, plaetze]);
 
-  const passt = REIHENFOLGE.every((pos) => besetzung[pos].length === shape[pos]);
+  const startelf = useMemo(
+    () => REIHENFOLGE.flatMap((pos) => plaetze[pos].filter((id) => id !== null)),
+    [plaetze],
+  );
+
+  const passt = REIHENFOLGE.every((pos) => besetzung[pos].every((p) => p !== null));
+
+  function besetze(pos: Position, index: number, playerId: number | null) {
+    setPlaetze((vorher) => ({
+      ...vorher,
+      [pos]: vorher[pos].map((id, i) => (i === index ? playerId : id)),
+    }));
+    offenerStand.current = activeLeagueId;
+    setUngespeichert(true);
+  }
 
   /**
    * Beim Formationswechsel bleibt stehen, was in die neue Aufstellung passt -
    * ein Wechsel von 4-4-2 auf 4-3-3 soll nicht die halbe Arbeit wegwerfen.
    */
   function wechsle(f: string) {
-    const neu = shapeOf(f);
     setFormation(f);
-    setStartelf(
-      REIHENFOLGE.flatMap((pos) =>
-        besetzung[pos].slice(0, neu[pos]).map((p) => p.playerId),
-      ),
-    );
+    setPlaetze(verteile(startelf, spieler, shapeOf(f)));
+    offenerStand.current = activeLeagueId;
+    setUngespeichert(true);
     setHinweis("");
   }
 
@@ -169,6 +237,8 @@ export default function SquadScreen() {
         body: { formation, startelf },
       });
       setHinweis("Aufstellung gespeichert.");
+      offenerStand.current = null;
+      setUngespeichert(false);
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Speichern fehlgeschlagen");
@@ -187,7 +257,7 @@ export default function SquadScreen() {
   }
 
   const bank = spieler.filter((p) => !startelf.includes(p.playerId));
-  const auswahl = wahl ? bank.filter((p) => p.position === wahl) : [];
+  const auswahl = wahl ? bank.filter((p) => p.position === wahl.pos) : [];
 
   return (
     <Screen
@@ -271,17 +341,17 @@ export default function SquadScreen() {
         shape={shape}
         besetzung={besetzung}
         gesperrt={gesperrt}
-        onLeer={setWahl}
-        onSpieler={(p) =>
-          !gesperrt && setStartelf((vorher) => vorher.filter((id) => id !== p.playerId))
-        }
+        onLeer={(pos, index) => setWahl({ pos, index })}
+        onSpieler={(pos, index) => !gesperrt && besetze(pos, index, null)}
         onSpielerLang={menue}
       />
       <Body dim>
         {formation} · {startelf.length}/11 aufgestellt
         {gesperrt
           ? " · eingefroren"
-          : " · Tippen nimmt vom Platz, Halten öffnet den Spieler"}
+          : ungespeichert
+            ? " · noch nicht gespeichert"
+            : " · Tippen nimmt vom Platz, Halten öffnet den Spieler"}
       </Body>
 
       {REIHENFOLGE.map((pos) => {
@@ -290,8 +360,8 @@ export default function SquadScreen() {
         return (
           <View key={pos} style={{ gap: 8 }}>
             <Body dim>
-              {LABEL[pos]} · {besetzung[pos].length}/{shape[pos]}
-              {besetzung[pos].length === shape[pos] ? " ✓" : ""}
+              {LABEL[pos]} · {besetzung[pos].filter((x) => x).length}/{shape[pos]}
+              {besetzung[pos].every((x) => x) ? " ✓" : ""}
             </Body>
             {gruppe.map((p) => {
               const drin = startelf.includes(p.playerId);
@@ -331,7 +401,7 @@ export default function SquadScreen() {
         <Pressable style={styles.backdrop} onPress={() => setWahl(null)} />
         <View style={[styles.sheet, { backgroundColor: c.background }]}>
           <ScrollView contentContainerStyle={styles.sheetInner}>
-            <Body style={styles.gross}>{wahl ? LABEL[wahl] : ""} besetzen</Body>
+            <Body style={styles.gross}>{wahl ? LABEL[wahl.pos] : ""} besetzen</Body>
             {auswahl.length === 0 && (
               <Body dim>
                 Kein freier Spieler auf dieser Position. Kauf im Transfermarkt nach.
@@ -341,7 +411,7 @@ export default function SquadScreen() {
               <Pressable
                 key={p.playerId}
                 onPress={() => {
-                  setStartelf((vorher) => [...vorher, p.playerId]);
+                  if (wahl) besetze(wahl.pos, wahl.index, p.playerId);
                   setWahl(null);
                 }}
               >

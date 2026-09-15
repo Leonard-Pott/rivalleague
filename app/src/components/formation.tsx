@@ -23,10 +23,11 @@ export function Formationsfeld({
   onSpielerLang,
 }: {
   shape: Record<Position, number>;
-  besetzung: Record<Position, SquadPlayer[]>;
+  /** Ein Eintrag je Formationsplatz, null heisst unbesetzt. */
+  besetzung: Record<Position, (SquadPlayer | null)[]>;
   gesperrt: boolean;
-  onLeer: (pos: Position) => void;
-  onSpieler: (p: SquadPlayer) => void;
+  onLeer: (pos: Position, index: number) => void;
+  onSpieler: (pos: Position, index: number) => void;
   onSpielerLang: (p: SquadPlayer) => void;
 }) {
   return (
@@ -51,15 +52,15 @@ export function Formationsfeld({
             const p = besetzung[pos][i];
             return p ? (
               <Platz
-                key={p.playerId}
+                key={`${pos}-${i}`}
                 p={p}
-                onPress={() => onSpieler(p)}
+                onPress={() => onSpieler(pos, i)}
                 onLongPress={() => onSpielerLang(p)}
               />
             ) : (
               <Leer
                 key={`${pos}-${i}`}
-                onPress={() => onLeer(pos)}
+                onPress={() => onLeer(pos, i)}
                 disabled={gesperrt}
               />
             );
