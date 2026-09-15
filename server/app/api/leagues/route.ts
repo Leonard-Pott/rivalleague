@@ -3,6 +3,7 @@ import { requireUser, HttpError } from "@/lib/auth";
 import { handle } from "@/lib/http";
 import { uniqueInviteCode } from "@/lib/invite";
 import { ensureFreeAgents } from "@/lib/market-db";
+import { loseStartkader } from "@/lib/draft-db";
 import { season } from "@/lib/sync";
 
 export const POST = handle(async (req: Request) => {
@@ -29,6 +30,9 @@ export const POST = handle(async (req: Request) => {
     },
   });
 
+  // Der Gruender startet wie alle anderen mit elf gelosten Spielern.
+  const gelost = await loseStartkader(league.id, manager.id);
+
   // Erste Befuellung sofort: ein leerer Markt in einer frischen Liga sieht
   // nach einem Fehler aus, der Nachschub tropft erst danach stundenweise.
   await ensureFreeAgents(league.id);
@@ -38,5 +42,6 @@ export const POST = handle(async (req: Request) => {
     name: league.name,
     inviteCode: league.inviteCode,
     managerId: manager.id,
+    gelost: gelost.length,
   };
 });

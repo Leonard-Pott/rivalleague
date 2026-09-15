@@ -32,7 +32,7 @@ export function LeagueSwitcher() {
     setBusy(true);
     setError("");
     try {
-      const res = await api<{ leagueId: string }>("/api/leagues", {
+      const res = await api<{ leagueId: string; gelost?: number }>("/api/leagues", {
         token,
         body: { name: newName },
       });
@@ -40,6 +40,7 @@ export function LeagueSwitcher() {
       await refresh();
       await setActiveLeague(res.leagueId);
       setOffen(false);
+      if (res.gelost) router.push("/opening");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Hat nicht geklappt");
     } finally {

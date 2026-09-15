@@ -31,6 +31,8 @@ function Gate() {
       <Stack.Screen name="login" />
       <Stack.Screen name="settings" />
       <Stack.Screen name="verein" />
+      <Stack.Screen name="opening" />
+      <Stack.Screen name="manager/[id]" />
       <Stack.Screen name="join/[code]" options={{ presentation: "modal" }} />
     </Stack>
   );

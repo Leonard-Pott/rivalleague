@@ -6,6 +6,7 @@ wöchentlich auf und handelt mit den anderen auf einem Transfermarkt. Punkte kom
 aus den echten Spielen des Wochenendes.
 
 <p align="center">
+  <img src="docs/screenshots/losung.png" width="200" alt="Zugeloster Startkader, Spieler für Spieler aufgedeckt">
   <img src="docs/screenshots/ranking.png" width="200" alt="Ranking mit Tabelle und Vermögensverlauf in Vereinsfarbe">
   <img src="docs/screenshots/kader.png" width="200" alt="Kader mit der Startelf auf dem Spielfeld">
   <img src="docs/screenshots/markt.png" width="200" alt="Transfermarkt mit Angeboten">
@@ -26,6 +27,13 @@ aus den echten Spielen des Wochenendes.
   keinen Speichern-Knopf, den man vergessen kann. Darunter liegt der komplette Kader
   nach Positionen sortiert, und dort stehen auch Marktwert, Punkte, Spielerdetails
   und der Verkauf. Mit Anpfiff des Spieltags friert die Aufstellung ein.
+- **Startkader per Losung.** Wer eine Liga anlegt oder ihr beitritt, bekommt elf
+  Spieler für zusammen rund 100 Mio zugelost — keiner davon teurer als 20 Mio — und
+  dazu 50 Mio zum Zukaufen. Die elf werden einzeln aufgedeckt, mit Wappen, Position
+  und Wert; danach steht man mit einer spielbaren Elf in der Tabelle statt vor einem
+  leeren Kader.
+- **Der Kader der Mitspieler.** Ein Tipp auf eine Zeile der Tabelle zeigt, womit
+  jemand vorne steht: Teamwert, Budget, Punkte und jeder einzelne Spieler.
 - **Transfermarkt mit verdeckten Geboten.** Jeder sieht nur sein eigenes Gebot.
   Über den Tag kommen laufend neue Spieler dazu, jedes Angebot hat seine eigene
   Laufzeit. Eigene Spieler bleiben auf dem Markt, bis jemand mindestens ihren
@@ -66,6 +74,15 @@ Lauf aus, nicht zehn. Das spart eine ganze Betriebsschicht, hat aber einen Preis
 Tageslimit. Deshalb liegt die Vorsaison-Statistik, aus der die Startmarktwerte
 berechnet werden, als JSON am Spieler — eine Neukalibrierung der Formel kostet so
 keinen einzigen API-Aufruf.
+
+**Die Losung rechnet sich an das Ziel heran.** Elf Spieler für 100 Mio zu ziehen ist
+ein Rucksackproblem, und das braucht hier niemand: Der Reihe nach wird für jeden
+Formationsplatz das übrige Geld durch die noch offenen Plätze geteilt, und aus den
+fünf Spielern, die diesem Zielwert am nächsten kommen, entscheidet der Zufall. Ein
+teurer Griff macht die späteren Plätze automatisch billiger, die Summe landet in
+Versuchen zuverlässig innerhalb weniger Prozent am Ziel — und zwei Manager bekommen
+trotzdem nicht denselben Kader. Gelost wird eine 4-4-2, damit die erste Aufstellung
+sicher aufgeht.
 
 **Vereinsfarben stehen im Code.** Weder API-Football noch OpenLigaDB liefern sie, und
 eine Farbe ändert sich seltener als ein Kader — also eine Tabelle in

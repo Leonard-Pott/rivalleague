@@ -177,3 +177,23 @@ export type PlayerDetail = {
     heimspiel: boolean;
   } | null;
 };
+
+export type ManagerDetail = {
+  managerId: string;
+  teamName: string;
+  managerName: string;
+  budget: number;
+  teamValue: number;
+  gesamtpunkte: number;
+  spieler: {
+    playerId: number;
+    name: string;
+    position: Position;
+    photoUrl: string | null;
+    team: TeamSummary;
+    marketValue: number;
+    gesamtpunkte: number;
+    spieltage: number;
+    schnitt: number | null;
+  }[];
+};

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { requireUser, HttpError } from "@/lib/auth";
 import { handle } from "@/lib/http";
+import { loseStartkader } from "@/lib/draft-db";
 
 export const POST = handle(async (req: Request) => {
   const user = await requireUser(req);
@@ -30,5 +31,13 @@ export const POST = handle(async (req: Request) => {
       budget: league.startBudget,
     },
   });
-  return { leagueId: league.id, name: league.name, managerId: manager.id, alreadyMember: false };
+  const gelost = await loseStartkader(league.id, manager.id);
+
+  return {
+    leagueId: league.id,
+    name: league.name,
+    managerId: manager.id,
+    alreadyMember: false,
+    gelost: gelost.length,
+  };
 });

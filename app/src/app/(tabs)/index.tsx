@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
-import { RefreshControl, StyleSheet, View } from "react-native";
-import { useFocusEffect } from "expo-router";
+import { Pressable, RefreshControl, StyleSheet, View } from "react-native";
+import { useFocusEffect, useRouter } from "expo-router";
 import { api, euroShort } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { Sparkline } from "@/components/sparkline";
@@ -17,6 +17,7 @@ import type { LeagueDetail } from "@/types";
 
 export default function RankingScreen() {
   const { token, activeLeagueId } = useSession();
+  const router = useRouter();
   const akzent = useAkzent();
   const ton = useTon();
   const [data, setData] = useState<LeagueDetail | null>(null);
@@ -94,8 +95,16 @@ export default function RankingScreen() {
           )}
 
           {data.table.map((row) => (
-            <Card
+            <Pressable
               key={row.managerId}
+              onPress={() =>
+                router.push({
+                  pathname: "/manager/[id]",
+                  params: { id: row.managerId },
+                })
+              }
+            >
+            <Card
               style={
                 row.isMe
                   ? { backgroundColor: ton, borderWidth: 2, borderColor: akzent.farbe }
@@ -118,7 +127,10 @@ export default function RankingScreen() {
                 </View>
               </View>
             </Card>
+            </Pressable>
           ))}
+
+          <Body dim>Tippen zeigt den Kader des Mitspielers.</Body>
         </>
       )}
     </Screen>
