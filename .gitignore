@@ -19,3 +19,6 @@ build/
 
 # Generierter Wissensgraph, wird lokal neu gebaut
 graphify-out/
+
+# Lokale Werkzeug-Konfiguration mit absoluten Pfaden
+/.claude/
