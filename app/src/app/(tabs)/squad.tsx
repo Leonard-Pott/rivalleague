@@ -1,5 +1,14 @@
 import { useCallback, useMemo, useState } from "react";
-import { Alert, Image, Pressable, RefreshControl, StyleSheet, View } from "react-native";
+import {
+  Alert,
+  Image,
+  Modal,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { api, euro, euroShort } from "@/lib/api";
 import { useSession } from "@/lib/session";
@@ -38,6 +47,8 @@ export default function SquadScreen() {
   const [lineup, setLineup] = useState<LineupState | null>(null);
   const [formation, setFormation] = useState("4-4-2");
   const [startelf, setStartelf] = useState<number[]>([]);
+  /** Position, fuer die gerade ein Spieler gesucht wird. */
+  const [wahl, setWahl] = useState<Position | null>(null);
   const [error, setError] = useState("");
   const [hinweis, setHinweis] = useState("");
   const [busy, setBusy] = useState(false);
@@ -67,37 +78,43 @@ export default function SquadScreen() {
   );
 
   const shape = useMemo(() => shapeOf(formation), [formation]);
+  const spieler = useMemo(() => squad?.spieler ?? [], [squad]);
+  const gesperrt = lineup?.locked ?? false;
 
-  const gezaehlt = useMemo(() => {
-    const counts: Record<Position, number> = { GK: 0, DEF: 0, MID: 0, FWD: 0 };
-    for (const p of squad?.spieler ?? []) {
-      if (startelf.includes(p.playerId)) counts[p.position]++;
+  /** Aufgestellte Spieler je Position, in der Reihenfolge der Slots. */
+  const besetzung = useMemo(() => {
+    const nach: Record<Position, SquadPlayer[]> = { GK: [], DEF: [], MID: [], FWD: [] };
+    for (const id of startelf) {
+      const p = spieler.find((x) => x.playerId === id);
+      if (p) nach[p.position].push(p);
     }
-    return counts;
-  }, [squad, startelf]);
+    return nach;
+  }, [spieler, startelf]);
 
-  const passt = REIHENFOLGE.every((pos) => gezaehlt[pos] === shape[pos]);
+  const passt = REIHENFOLGE.every((pos) => besetzung[pos].length === shape[pos]);
 
-  function toggle(p: SquadPlayer) {
-    if (lineup?.locked) return;
+  /**
+   * Beim Formationswechsel bleibt stehen, was in die neue Aufstellung passt -
+   * ein Wechsel von 4-4-2 auf 4-3-3 soll nicht die halbe Arbeit wegwerfen.
+   */
+  function wechsle(f: string) {
+    const neu = shapeOf(f);
+    setFormation(f);
+    setStartelf(
+      REIHENFOLGE.flatMap((pos) =>
+        besetzung[pos].slice(0, neu[pos]).map((p) => p.playerId),
+      ),
+    );
     setHinweis("");
-    setStartelf((vorher) => {
-      if (vorher.includes(p.playerId)) {
-        return vorher.filter((id) => id !== p.playerId);
-      }
-      if (gezaehlt[p.position] >= shape[p.position]) {
-        setHinweis(
-          `${LABEL[p.position]} ist voll (${shape[p.position]}). Erst jemanden herausnehmen.`,
-        );
-        return vorher;
-      }
-      return [...vorher, p.playerId];
-    });
   }
 
   function menue(p: SquadPlayer) {
     Alert.alert(p.name, `${p.team.name} · ${euro(p.marketValue)}`, [
-      { text: "Details ansehen", onPress: () => router.push({ pathname: "/player/[id]", params: { id: String(p.playerId) } }) },
+      {
+        text: "Details ansehen",
+        onPress: () =>
+          router.push({ pathname: "/player/[id]", params: { id: String(p.playerId) } }),
+      },
       { text: "Zum Verkauf anbieten", onPress: () => verkaufen(p) },
       { text: "Abbrechen", style: "cancel" },
     ]);
@@ -106,7 +123,7 @@ export default function SquadScreen() {
   function verkaufen(p: SquadPlayer) {
     Alert.alert(
       `${p.name} verkaufen?`,
-      `Er kommt bis zum Marktschluss zum Mindestgebot ${euro(p.marketValue)} auf den Markt. Findet sich kein Käufer, bleibt er in deinem Kader.`,
+      `Er steht dann zum Mindestgebot ${euro(p.marketValue)} auf dem Markt und bleibt dort, bis jemand mindestens seinen Marktwert bietet.`,
       [
         { text: "Abbrechen", style: "cancel" },
         {
@@ -156,6 +173,9 @@ export default function SquadScreen() {
     );
   }
 
+  const bank = spieler.filter((p) => !startelf.includes(p.playerId));
+  const auswahl = wahl ? bank.filter((p) => p.position === wahl) : [];
+
   return (
     <Screen
       insetTop={false}
@@ -204,23 +224,17 @@ export default function SquadScreen() {
                 })}`
               : ""}
           </Body>
-          {lineup.locked ? (
+          {gesperrt ? (
             <Body>Der Spieltag läuft — die Aufstellung ist eingefroren.</Body>
           ) : (
             <View style={styles.chips}>
               {lineup.formationen.map((f) => (
                 <Pressable
                   key={f}
-                  onPress={() => {
-                    setFormation(f);
-                    setStartelf([]);
-                    setHinweis("Formation gewechselt, Startelf zurückgesetzt.");
-                  }}
+                  onPress={() => wechsle(f)}
                   style={[
                     styles.chip,
-                    {
-                      backgroundColor: f === formation ? ACCENT : c.backgroundSelected,
-                    },
+                    { backgroundColor: f === formation ? ACCENT : c.backgroundSelected },
                   ]}
                 >
                   <Body style={{ color: f === formation ? "#fff" : c.text }}>{f}</Body>
@@ -233,68 +247,69 @@ export default function SquadScreen() {
 
       {hinweis ? <Body dim>{hinweis}</Body> : null}
 
-      {(squad?.kaderGroesse ?? 0) > 0 && (
-        <Body dim>Tippen stellt auf, langes Tippen öffnet Details und Verkauf.</Body>
-      )}
-
       {squad?.kaderGroesse === 0 && (
         <Body dim>
           Dein Kader ist leer. Kauf dir im Transfermarkt mindestens elf Spieler.
         </Body>
       )}
 
-      {REIHENFOLGE.map((pos) => {
-        const spieler = (squad?.spieler ?? []).filter((p) => p.position === pos);
-        if (spieler.length === 0) return null;
-        const voll = gezaehlt[pos] === shape[pos];
-        return (
-          <View key={pos} style={{ gap: 8 }}>
-            <Body dim>
-              {LABEL[pos]} · {gezaehlt[pos]}/{shape[pos]}
-              {voll ? " ✓" : ""}
-            </Body>
-            {spieler.map((p) => {
-              const drin = startelf.includes(p.playerId);
+      {/* Die Aufstellung: je Formationsplatz eine Zeile, leer oder besetzt. */}
+      {REIHENFOLGE.map((pos) => (
+        <View key={pos} style={{ gap: 8 }}>
+          <Body dim>
+            {LABEL[pos]} · {besetzung[pos].length}/{shape[pos]}
+            {besetzung[pos].length === shape[pos] ? " ✓" : ""}
+          </Body>
+
+          {Array.from({ length: shape[pos] }, (_, i) => {
+            const p = besetzung[pos][i];
+            if (!p) {
               return (
                 <Pressable
-                  key={p.playerId}
-                  onPress={() => toggle(p)}
-                  onLongPress={() => menue(p)}
+                  key={`${pos}-leer-${i}`}
+                  onPress={() => setWahl(pos)}
+                  disabled={gesperrt}
                 >
-                  <Card
-                    style={
-                      drin ? { borderWidth: 2, borderColor: ACCENT } : { opacity: 0.75 }
-                    }
-                  >
-                    <View style={styles.zeile}>
-                      {p.photoUrl ? (
-                        <Image source={{ uri: p.photoUrl }} style={styles.foto} />
-                      ) : (
-                        <View style={[styles.foto, { backgroundColor: c.backgroundSelected }]} />
-                      )}
-                      <View style={{ flex: 1 }}>
-                        <Body style={styles.name}>{p.name}</Body>
-                        <Body dim>
-                          {p.team.name} · {euroShort(p.marketValue)}
-                          {p.gewinn !== 0
-                            ? `  ${p.gewinn > 0 ? "▲" : "▼"} ${euroShort(Math.abs(p.gewinn))}`
-                            : ""}
-                        </Body>
-                      </View>
-                      <View style={{ alignItems: "flex-end" }}>
-                        <Body style={styles.punkte}>{p.gesamtpunkte}</Body>
-                        <Body dim>Punkte</Body>
-                      </View>
-                    </View>
-                  </Card>
+                  <View style={[styles.leer, { borderColor: c.textSecondary }]}>
+                    <Body style={[styles.plus, { color: ACCENT }]}>＋</Body>
+                    <Body dim>{LABEL[pos]} besetzen</Body>
+                  </View>
                 </Pressable>
               );
-            })}
-          </View>
-        );
-      })}
+            }
+            return (
+              <Pressable
+                key={p.playerId}
+                onPress={() =>
+                  !gesperrt &&
+                  setStartelf((vorher) => vorher.filter((id) => id !== p.playerId))
+                }
+                onLongPress={() => menue(p)}
+              >
+                <Card style={{ borderWidth: 2, borderColor: ACCENT }}>
+                  <SpielerZeile p={p} rechts={gesperrt ? null : "✕"} />
+                </Card>
+              </Pressable>
+            );
+          })}
+        </View>
+      ))}
 
-      {squad && squad.kaderGroesse > 0 && !lineup?.locked && (
+      {bank.length > 0 && (
+        <>
+          <Body dim>Bank · {bank.length}</Body>
+          {bank.map((p) => (
+            <Pressable key={p.playerId} onPress={() => menue(p)}>
+              <Card style={{ opacity: 0.75 }}>
+                <SpielerZeile p={p} rechts={null} />
+              </Card>
+            </Pressable>
+          ))}
+          <Body dim>Tippen öffnet Details und Verkauf.</Body>
+        </>
+      )}
+
+      {squad && squad.kaderGroesse > 0 && !gesperrt && (
         <Button
           label={passt ? "Aufstellung speichern" : `${startelf.length}/11 aufgestellt`}
           onPress={speichern}
@@ -302,7 +317,69 @@ export default function SquadScreen() {
           disabled={!passt}
         />
       )}
+
+      <Modal
+        visible={wahl !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setWahl(null)}
+      >
+        <Pressable style={styles.backdrop} onPress={() => setWahl(null)} />
+        <View style={[styles.sheet, { backgroundColor: c.background }]}>
+          <ScrollView contentContainerStyle={styles.sheetInner}>
+            <Body style={styles.gross}>{wahl ? LABEL[wahl] : ""} besetzen</Body>
+            {auswahl.length === 0 && (
+              <Body dim>
+                Kein freier Spieler auf dieser Position. Kauf im Transfermarkt nach.
+              </Body>
+            )}
+            {auswahl.map((p) => (
+              <Pressable
+                key={p.playerId}
+                onPress={() => {
+                  setStartelf((vorher) => [...vorher, p.playerId]);
+                  setWahl(null);
+                }}
+              >
+                <Card>
+                  <SpielerZeile p={p} rechts={null} />
+                </Card>
+              </Pressable>
+            ))}
+            <Button label="Abbrechen" variant="ghost" onPress={() => setWahl(null)} />
+          </ScrollView>
+        </View>
+      </Modal>
     </Screen>
+  );
+}
+
+function SpielerZeile({ p, rechts }: { p: SquadPlayer; rechts: string | null }) {
+  const c = useColors();
+  return (
+    <View style={styles.zeile}>
+      {p.photoUrl ? (
+        <Image source={{ uri: p.photoUrl }} style={styles.foto} />
+      ) : (
+        <View style={[styles.foto, { backgroundColor: c.backgroundSelected }]} />
+      )}
+      <View style={{ flex: 1 }}>
+        <Body style={styles.name} numberOfLines={1}>
+          {p.name}
+        </Body>
+        <Body dim numberOfLines={1}>
+          {p.team.name} · {euroShort(p.marketValue)}
+          {p.gewinn !== 0
+            ? `  ${p.gewinn > 0 ? "▲" : "▼"} ${euroShort(Math.abs(p.gewinn))}`
+            : ""}
+        </Body>
+      </View>
+      <View style={{ alignItems: "flex-end" }}>
+        <Body style={styles.punkte}>{p.gesamtpunkte}</Body>
+        <Body dim>Punkte</Body>
+      </View>
+      {rechts ? <Body style={{ color: c.textSecondary, fontSize: 20 }}>{rechts}</Body> : null}
+    </View>
   );
 }
 
@@ -314,4 +391,33 @@ const styles = StyleSheet.create({
   foto: { width: 40, height: 40, borderRadius: 20 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 },
+  leer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    paddingVertical: 18,
+    paddingHorizontal: 14,
+  },
+  plus: { fontSize: 20, fontWeight: "700" },
+  backdrop: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#0008",
+  },
+  sheet: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    maxHeight: "80%",
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+  },
+  sheetInner: { padding: 16, gap: 10 },
 });
