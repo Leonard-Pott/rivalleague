@@ -20,15 +20,15 @@ export function Formationsfeld({
   gesperrt,
   onLeer,
   onSpieler,
-  onSpielerLang,
+  onEntfernen,
 }: {
   shape: Record<Position, number>;
   /** Ein Eintrag je Formationsplatz, null heisst unbesetzt. */
   besetzung: Record<Position, (SquadPlayer | null)[]>;
   gesperrt: boolean;
   onLeer: (pos: Position, index: number) => void;
-  onSpieler: (pos: Position, index: number) => void;
-  onSpielerLang: (p: SquadPlayer) => void;
+  onSpieler: (p: SquadPlayer) => void;
+  onEntfernen: (pos: Position, index: number) => void;
 }) {
   return (
     <View style={styles.platz}>
@@ -54,8 +54,8 @@ export function Formationsfeld({
               <Platz
                 key={`${pos}-${i}`}
                 p={p}
-                onPress={() => onSpieler(pos, i)}
-                onLongPress={() => onSpielerLang(p)}
+                onPress={() => onSpieler(p)}
+                onEntfernen={gesperrt ? null : () => onEntfernen(pos, i)}
               />
             ) : (
               <Leer
@@ -74,21 +74,32 @@ export function Formationsfeld({
 function Platz({
   p,
   onPress,
-  onLongPress,
+  onEntfernen,
 }: {
   p: SquadPlayer;
   onPress: () => void;
-  onLongPress: () => void;
+  /** Null, solange der Spieltag laeuft - dann wird nichts mehr getauscht. */
+  onEntfernen: (() => void) | null;
 }) {
   // Nur der Nachname: auf einem Feld mit fuenf Spielern nebeneinander ist
   // fuer mehr kein Platz, und im Fussball reicht er ohnehin.
   const nachname = p.name.split(" ").slice(-1)[0];
   return (
-    <Pressable style={styles.slot} onPress={onPress} onLongPress={onLongPress}>
+    <Pressable style={styles.slot} onPress={onPress}>
       {p.photoUrl ? (
         <Image source={{ uri: p.photoUrl }} style={styles.foto} />
       ) : (
         <View style={[styles.foto, styles.fotoLeer]} />
+      )}
+      {onEntfernen && (
+        <Pressable
+          style={styles.raus}
+          onPress={onEntfernen}
+          hitSlop={10}
+          accessibilityLabel={`${p.name} aus der Aufstellung nehmen`}
+        >
+          <Body style={styles.rausZeichen}>✕</Body>
+        </Pressable>
       )}
       <View style={styles.schild}>
         <Body numberOfLines={1} style={styles.name}>
@@ -156,6 +167,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   slot: { alignItems: "center", width: 62 },
+  raus: {
+    position: "absolute",
+    top: -2,
+    right: 6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#000000AA",
+    borderWidth: 1,
+    borderColor: "#FFFFFF88",
+  },
+  rausZeichen: { color: "#fff", fontSize: 11, lineHeight: 14, fontWeight: "700" },
   foto: {
     width: 42,
     height: 42,

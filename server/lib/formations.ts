@@ -18,10 +18,31 @@ export const FORMATIONS: Record<string, Shape> = {
 
 export const STARTERS = 11;
 
-export type LineupPlayer = { playerId: number; position: Position };
+const REIHENFOLGE: Position[] = ["GK", "DEF", "MID", "FWD"];
+
+/**
+ * Die elf Plaetze einer Formation, von hinten nach vorn durchnummeriert:
+ * Platz 0 ist der Torwart, danach Abwehr, Mittelfeld, Angriff.
+ *
+ * Der Platz ist die Einheit, in der aufgestellt wird - nicht die Position.
+ * Sonst rutscht der Aussenverteidiger, den jemand bewusst nach rechts
+ * gestellt hat, beim naechsten Laden nach innen.
+ */
+export function slotPositions(formation: string): Position[] {
+  const shape = FORMATIONS[formation];
+  if (!shape) return [];
+  return REIHENFOLGE.flatMap((pos) => Array<Position>(shape[pos]).fill(pos));
+}
+
+export type LineupPlayer = { playerId: number; position: Position; slot: number };
 
 /**
  * Prueft eine Aufstellung, bevor sie gespeichert wird.
+ *
+ * Unvollstaendig ist erlaubt: gespeichert wird bei jeder Aenderung, und
+ * zwischen dem ersten und dem elften Spieler ist die Aufstellung nun einmal
+ * halb fertig. Wer am Spieltag Plaetze frei laesst, verschenkt Punkte - das
+ * ist eine Entscheidung, kein Fehler.
  *
  * Gibt bewusst alle Fehler auf einmal zurueck statt beim ersten abzubrechen:
  * wer eine Aufstellung zusammenklickt, will nicht siebenmal hintereinander
@@ -32,30 +53,17 @@ export function validateLineup(
   starters: LineupPlayer[],
   ownedPlayerIds: Set<number>,
 ): string[] {
-  const errors: string[] = [];
-  const shape = FORMATIONS[formation];
+  const plaetze = slotPositions(formation);
 
-  if (!shape) {
+  if (plaetze.length === 0) {
     return [`Formation "${formation}" gibt es nicht. Moeglich: ${Object.keys(FORMATIONS).join(", ")}`];
   }
 
-  if (starters.length !== STARTERS) {
-    errors.push(`Die Startelf braucht ${STARTERS} Spieler, du hast ${starters.length}.`);
-  }
+  const errors: string[] = [];
 
-  const seen = new Set<number>();
-  for (const p of starters) {
-    if (seen.has(p.playerId)) {
-      errors.push(`Spieler ${p.playerId} steht doppelt in der Aufstellung.`);
-    }
-    seen.add(p.playerId);
-    if (!ownedPlayerIds.has(p.playerId)) {
-      errors.push(`Spieler ${p.playerId} gehoert nicht zu deinem Kader.`);
-    }
+  if (starters.length > STARTERS) {
+    errors.push(`Die Startelf fasst ${STARTERS} Spieler, du hast ${starters.length}.`);
   }
-
-  const counted: Shape = { GK: 0, DEF: 0, MID: 0, FWD: 0 };
-  for (const p of starters) counted[p.position]++;
 
   const label: Record<Position, string> = {
     GK: "Torwart",
@@ -63,10 +71,32 @@ export function validateLineup(
     MID: "Mittelfeld",
     FWD: "Angriff",
   };
-  for (const pos of ["GK", "DEF", "MID", "FWD"] as Position[]) {
-    if (counted[pos] !== shape[pos]) {
+
+  const belegt = new Set<number>();
+  const gesehen = new Set<number>();
+
+  for (const p of starters) {
+    if (gesehen.has(p.playerId)) {
+      errors.push(`Spieler ${p.playerId} steht doppelt in der Aufstellung.`);
+    }
+    gesehen.add(p.playerId);
+
+    if (!ownedPlayerIds.has(p.playerId)) {
+      errors.push(`Spieler ${p.playerId} gehoert nicht zu deinem Kader.`);
+    }
+
+    if (!Number.isInteger(p.slot) || p.slot < 0 || p.slot >= plaetze.length) {
+      errors.push(`Platz ${p.slot} gibt es in ${formation} nicht.`);
+      continue;
+    }
+    if (belegt.has(p.slot)) {
+      errors.push(`Platz ${p.slot} ist doppelt besetzt.`);
+    }
+    belegt.add(p.slot);
+
+    if (plaetze[p.slot] !== p.position) {
       errors.push(
-        `${formation} braucht ${shape[pos]} in ${label[pos]}, aufgestellt sind ${counted[pos]}.`,
+        `Platz ${p.slot} ist ${label[plaetze[p.slot]]}, Spieler ${p.playerId} ist ${label[p.position]}.`,
       );
     }
   }

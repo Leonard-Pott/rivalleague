@@ -83,7 +83,8 @@ export type LineupState = {
   locked: boolean;
   formationen: string[];
   formation: string | null;
-  startelf: number[];
+  /** Ein Eintrag je besetztem Formationsplatz, slot 0 ist der Torwart. */
+  startelf: { playerId: number; slot: number }[];
 };
 
 export type Offer = {

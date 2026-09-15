@@ -211,6 +211,9 @@ model LineupSlot {
   lineupId  String
   playerId  Int
   isStarter Boolean @default(true)
+  /// Platz in der Formation, 0 bis 10 von hinten nach vorn. Null auf der Bank
+  /// und bei Aufstellungen, die vor den Formationsplaetzen gespeichert wurden.
+  slot      Int?
   lineup    Lineup  @relation(fields: [lineupId], references: [id], onDelete: Cascade)
   player    Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
 

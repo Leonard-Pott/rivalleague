@@ -49,25 +49,58 @@ function leerePlaetze(shape: Record<Position, number>): Plaetze {
   };
 }
 
-/**
- * Verteilt eine Spielerliste von links nach rechts auf die Plaetze. Der Server
- * kennt nur die elf Spieler, nicht ihre Position im Raster - beim Laden und
- * beim Formationswechsel ist links nach rechts die einzige sinnvolle Annahme.
- * Wer nicht mehr passt, faellt heraus.
- */
+/** Die elf Plaetze am Stueck, von hinten nach vorn - dieselbe Zaehlung wie im Server. */
+function flachePlaetze(shape: Record<Position, number>): Position[] {
+  return REIHENFOLGE.flatMap((pos) => Array<Position>(shape[pos]).fill(pos));
+}
+
+/** Nummer des Platzes, wie der Server sie kennt. */
+function slotNummer(pos: Position, index: number, shape: Record<Position, number>): number {
+  return flachePlaetze(shape).indexOf(pos) + index;
+}
+
+/** Aufstellung fuer den Server: ein Eintrag je besetztem Platz. */
+function alsStartelf(plaetze: Plaetze, shape: Record<Position, number>) {
+  return REIHENFOLGE.flatMap((pos) =>
+    plaetze[pos].flatMap((id, i) =>
+      id === null ? [] : [{ playerId: id, slot: slotNummer(pos, i, shape) }],
+    ),
+  );
+}
+
+/** Setzt eine gespeicherte Aufstellung wieder auf ihre Plaetze. */
 function verteile(
-  ids: number[],
+  starter: { playerId: number; slot: number }[],
   spieler: SquadPlayer[],
   shape: Record<Position, number>,
 ): Plaetze {
   const plaetze = leerePlaetze(shape);
-  for (const id of ids) {
-    const p = spieler.find((x) => x.playerId === id);
-    if (!p) continue;
-    const frei = plaetze[p.position].indexOf(null);
-    if (frei >= 0) plaetze[p.position][frei] = id;
+  const flach = flachePlaetze(shape);
+
+  for (const s of starter) {
+    const pos = flach[s.slot];
+    const p = spieler.find((x) => x.playerId === s.playerId);
+    // Position und Platz koennen auseinanderlaufen, wenn ein Spieler den
+    // Verein gewechselt hat oder die Formation eine andere ist.
+    if (!pos || !p || p.position !== pos) continue;
+    const index = s.slot - flach.indexOf(pos);
+    if (plaetze[pos][index] === null) plaetze[pos][index] = s.playerId;
   }
   return plaetze;
+}
+
+/**
+ * Raeumt die Aufstellung in eine andere Formation um: was in die neue Reihe
+ * passt, bleibt in seiner Reihenfolge stehen, der Rest faellt heraus. Ein
+ * Wechsel von 4-4-2 auf 4-3-3 soll nicht die halbe Arbeit wegwerfen.
+ */
+function umraeumen(plaetze: Plaetze, shape: Record<Position, number>): Plaetze {
+  const neu = leerePlaetze(shape);
+  for (const pos of REIHENFOLGE) {
+    const besetzt = plaetze[pos].filter((id) => id !== null);
+    besetzt.slice(0, shape[pos]).forEach((id, i) => (neu[pos][i] = id));
+  }
+  return neu;
 }
 const LABEL: Record<Position, string> = {
   GK: "Tor",
@@ -85,21 +118,17 @@ export default function SquadScreen() {
   const [lineup, setLineup] = useState<LineupState | null>(null);
   const [formation, setFormation] = useState("4-4-2");
   const [plaetze, setPlaetze] = useState<Plaetze>(() => leerePlaetze(shapeOf("4-4-2")));
+  const [speichert, setSpeichert] = useState(false);
   /**
-   * Liga mit ungespeicherten Aenderungen an der Aufstellung.
-   *
-   * Der Bildschirm laedt bei jedem Fokus neu - ohne diese Merkung waere eine
-   * halb fertige Aufstellung weg, sobald man kurz in den Transfermarkt
-   * schaut. Beim Ligawechsel greift sie bewusst nicht: die offene Aufstellung
-   * gehoert zur anderen Liga.
+   * Jede Aenderung geht sofort zum Server, und zwar der Reihe nach: zwei
+   * Aufrufe gleichzeitig koennten in falscher Reihenfolge ankommen und die
+   * juengere Aufstellung mit der aelteren ueberschreiben.
    */
-  const offenerStand = useRef<string | null>(null);
-  const [ungespeichert, setUngespeichert] = useState(false);
+  const kette = useRef<Promise<void>>(Promise.resolve());
   /** Platz, fuer den gerade ein Spieler gesucht wird. */
   const [wahl, setWahl] = useState<{ pos: Position; index: number } | null>(null);
   const [error, setError] = useState("");
   const [hinweis, setHinweis] = useState("");
-  const [busy, setBusy] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
@@ -110,14 +139,11 @@ export default function SquadScreen() {
         api<Squad>(`/api/leagues/${activeLeagueId}/squad`, { token }),
         api<LineupState>(`/api/leagues/${activeLeagueId}/lineup`, { token }),
       ]);
+      const f = l.formation ?? "4-4-2";
       setSquad(s);
       setLineup(l);
-      if (offenerStand.current !== activeLeagueId) {
-        const f = l.formation ?? "4-4-2";
-        setFormation(f);
-        setPlaetze(verteile(l.startelf, s.spieler, shapeOf(f)));
-        setUngespeichert(false);
-      }
+      setFormation(f);
+      setPlaetze(verteile(l.startelf, s.spieler, shapeOf(f)));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Laden fehlgeschlagen");
     }
@@ -149,32 +175,49 @@ export default function SquadScreen() {
     return nach;
   }, [spieler, plaetze]);
 
-  const startelf = useMemo(
+  const aufgestellt = useMemo(
     () => REIHENFOLGE.flatMap((pos) => plaetze[pos].filter((id) => id !== null)),
     [plaetze],
   );
 
-  const passt = REIHENFOLGE.every((pos) => besetzung[pos].every((p) => p !== null));
-
-  function besetze(pos: Position, index: number, playerId: number | null) {
-    setPlaetze((vorher) => ({
-      ...vorher,
-      [pos]: vorher[pos].map((id, i) => (i === index ? playerId : id)),
-    }));
-    offenerStand.current = activeLeagueId;
-    setUngespeichert(true);
+  /**
+   * Speichert sofort. Eine halb fertige Aufstellung ist erlaubt - alles andere
+   * hiesse, den Stand bis zum elften Spieler in der App zu halten und beim
+   * naechsten Blick in den Markt zu verlieren.
+   */
+  function speichere(neu: Plaetze, f: string) {
+    if (!activeLeagueId) return;
+    setSpeichert(true);
+    setError("");
+    setHinweis("");
+    kette.current = kette.current
+      .then(() =>
+        api(`/api/leagues/${activeLeagueId}/lineup`, {
+          token,
+          method: "PUT",
+          body: { formation: f, startelf: alsStartelf(neu, shapeOf(f)) },
+        }).then(() => undefined),
+      )
+      .catch((e: unknown) =>
+        setError(e instanceof Error ? e.message : "Speichern fehlgeschlagen"),
+      )
+      .finally(() => setSpeichert(false));
   }
 
-  /**
-   * Beim Formationswechsel bleibt stehen, was in die neue Aufstellung passt -
-   * ein Wechsel von 4-4-2 auf 4-3-3 soll nicht die halbe Arbeit wegwerfen.
-   */
+  function besetze(pos: Position, index: number, playerId: number | null) {
+    const neu = {
+      ...plaetze,
+      [pos]: plaetze[pos].map((id, i) => (i === index ? playerId : id)),
+    };
+    setPlaetze(neu);
+    speichere(neu, formation);
+  }
+
   function wechsle(f: string) {
+    const neu = umraeumen(plaetze, shapeOf(f));
     setFormation(f);
-    setPlaetze(verteile(startelf, spieler, shapeOf(f)));
-    offenerStand.current = activeLeagueId;
-    setUngespeichert(true);
-    setHinweis("");
+    setPlaetze(neu);
+    speichere(neu, f);
   }
 
   /**
@@ -226,27 +269,6 @@ export default function SquadScreen() {
     );
   }
 
-  async function speichern() {
-    setBusy(true);
-    setError("");
-    setHinweis("");
-    try {
-      await api(`/api/leagues/${activeLeagueId}/lineup`, {
-        token,
-        method: "PUT",
-        body: { formation, startelf },
-      });
-      setHinweis("Aufstellung gespeichert.");
-      offenerStand.current = null;
-      setUngespeichert(false);
-      await load();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Speichern fehlgeschlagen");
-    } finally {
-      setBusy(false);
-    }
-  }
-
   if (!activeLeagueId) {
     return (
       <Screen insetTop={false}>
@@ -256,7 +278,7 @@ export default function SquadScreen() {
     );
   }
 
-  const bank = spieler.filter((p) => !startelf.includes(p.playerId));
+  const bank = spieler.filter((p) => !aufgestellt.includes(p.playerId));
   const auswahl = wahl ? bank.filter((p) => p.position === wahl.pos) : [];
 
   return (
@@ -342,16 +364,12 @@ export default function SquadScreen() {
         besetzung={besetzung}
         gesperrt={gesperrt}
         onLeer={(pos, index) => setWahl({ pos, index })}
-        onSpieler={(pos, index) => !gesperrt && besetze(pos, index, null)}
-        onSpielerLang={menue}
+        onSpieler={menue}
+        onEntfernen={(pos, index) => besetze(pos, index, null)}
       />
       <Body dim>
-        {formation} · {startelf.length}/11 aufgestellt
-        {gesperrt
-          ? " · eingefroren"
-          : ungespeichert
-            ? " · noch nicht gespeichert"
-            : " · Tippen nimmt vom Platz, Halten öffnet den Spieler"}
+        {formation} · {aufgestellt.length}/11 aufgestellt
+        {gesperrt ? " · eingefroren" : speichert ? " · speichert …" : " · sofort gespeichert"}
       </Body>
 
       {REIHENFOLGE.map((pos) => {
@@ -364,7 +382,7 @@ export default function SquadScreen() {
               {besetzung[pos].every((x) => x) ? " ✓" : ""}
             </Body>
             {gruppe.map((p) => {
-              const drin = startelf.includes(p.playerId);
+              const drin = aufgestellt.includes(p.playerId);
               return (
                 <Pressable key={p.playerId} onPress={() => menue(p)}>
                   <Card
@@ -382,15 +400,6 @@ export default function SquadScreen() {
           </View>
         );
       })}
-
-      {squad && squad.kaderGroesse > 0 && !gesperrt && (
-        <Button
-          label={passt ? "Aufstellung speichern" : `${startelf.length}/11 aufgestellt`}
-          onPress={speichern}
-          busy={busy}
-          disabled={!passt}
-        />
-      )}
 
       <Modal
         visible={wahl !== null}
