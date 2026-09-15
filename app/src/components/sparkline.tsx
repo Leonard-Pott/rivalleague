@@ -37,10 +37,13 @@ export function Sparkline({ values, height = 90, zeroLine = false }: Props) {
 
   const min = Math.min(...values, zeroLine ? 0 : Math.min(...values));
   const max = Math.max(...values, zeroLine ? 0 : Math.max(...values));
-  const spanne = max - min || 1;
+  const spanne = max - min;
 
   const x = (i: number) => PAD + (i / (values.length - 1)) * (W - 2 * PAD);
-  const y = (v: number) => H - PAD - ((v - min) / spanne) * (H - 2 * PAD);
+  // Ohne Spanne gaebe es keinen sinnvollen Nullpunkt: eine waagerechte Linie
+  // gehoert dann in die Mitte, nicht an den unteren Rand.
+  const y = (v: number) =>
+    spanne === 0 ? H / 2 : H - PAD - ((v - min) / spanne) * (H - 2 * PAD);
 
   const punkte = values.map((v, i) => `${x(i)},${y(v)}`).join(" ");
   const flaeche = `${x(0)},${H} ${punkte} ${x(values.length - 1)},${H}`;
