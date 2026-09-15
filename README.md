@@ -17,9 +17,11 @@ aus den echten Spielen des Wochenendes.
 - **Mehrere Ligen pro Konto.** Jede Liga hat einen eigenen Kader, ein eigenes Budget
   und eine eigene Tabelle. Gewechselt wird über das Dropdown in der Kopfzeile,
   beigetreten ausschließlich über einen Einladungslink.
-- **Aufstellung nach Formation.** Sieben Formationen, die Plätze werden einzeln
-  besetzt; die Auswahl zeigt nur Spieler der passenden Position. Mit Anpfiff des
-  Spieltags friert die Aufstellung ein.
+- **Aufstellung auf dem Platz.** Die Startelf steht als Formation auf einem Rasen,
+  eigenes Tor unten, Angriff oben — wie die Aufstellungsgrafik einer Übertragung.
+  Sieben Formationen, leere Plätze werden einzeln besetzt und die Auswahl zeigt nur
+  Spieler der passenden Position; darunter liegt der komplette Kader nach Positionen
+  sortiert. Mit Anpfiff des Spieltags friert die Aufstellung ein.
 - **Transfermarkt mit verdeckten Geboten.** Jeder sieht nur sein eigenes Gebot.
   Über den Tag kommen laufend neue Spieler dazu, jedes Angebot hat seine eigene
   Laufzeit. Eigene Spieler bleiben auf dem Markt, bis jemand mindestens ihren
@@ -29,6 +31,9 @@ aus den echten Spielen des Wochenendes.
 - **Aktivitätenfeed.** Alle Käufe und Verkäufe der Mitspieler und alles, was neu auf
   dem Markt liegt, in einem Zeitstrahl.
 - **Punkte nach echten Spielen**, inklusive Prämie: 20.000 € je Spieltagspunkt.
+- **Punkte je Spiel pro Spieler.** Die Spielerseite listet jede Partie einzeln auf —
+  Gegner, Ergebnis, Einsatzminuten und die Punkte daraus — dazu Summe und Schnitt.
+  Der Schnitt steht auch an jedem Spieler auf dem Feld und in der Kaderliste.
 
 ## Technisch interessant
 
@@ -98,6 +103,11 @@ cp server/.env.example server/.env         # JWT_SECRET, ADMIN_TOKEN, API_FOOTBA
 cd server && npm install && npm run migrate && npm run dev
 cd app && npm install && npx expo start    # --android oder --ios
 ```
+
+Welche Saison gespielt wird, steht in `server/.env`: `SEASON` ist die laufende
+Spielzeit, `STATS_SEASON` die Vorsaison, aus der die Startmarktwerte kommen. Beide
+sind getrennt, weil der kostenlose Tarif die aktuelle Statistik nicht herausgibt —
+freigeschaltet ist nur bis 2024. Zum Saisonwechsel reichen die zwei Zeilen.
 
 Die App findet das Backend von selbst: Sie nimmt die IP, über die Expo gerade den
 Bundler ausliefert, und hängt Port 3000 an. Nur wenn das Backend woanders läuft,

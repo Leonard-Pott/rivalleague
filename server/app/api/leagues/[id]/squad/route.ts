@@ -16,7 +16,7 @@ export const GET = handle(async (req: Request, ctx: Ctx) => {
       player: {
         include: {
           team: { select: { id: true, name: true, logoUrl: true } },
-          points: { orderBy: { matchday: "desc" }, take: 5 },
+          points: { orderBy: { matchday: "desc" } },
         },
       },
     },
@@ -41,6 +41,11 @@ export const GET = handle(async (req: Request, ctx: Ctx) => {
     /** Kursgewinn seit dem Kauf - die Zahl, auf die alle schauen. */
     gewinn: r.player.marketValue - r.boughtFor,
     gesamtpunkte: r.player.points.reduce((s, p) => s + p.points, 0),
+    /** Schnitt je bestrittenem Spieltag - vergleichbar ueber ungleiche Einsatzzeiten. */
+    schnitt: r.player.points.length
+      ? Math.round(r.player.points.reduce((s, p) => s + p.points, 0) / r.player.points.length)
+      : null,
+    spieltage: r.player.points.length,
     letztePunkte: r.player.points[0]?.points ?? null,
     isStarter: startelf.has(r.player.id),
   }));

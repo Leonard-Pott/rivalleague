@@ -12,6 +12,7 @@ import {
 import { useFocusEffect, useRouter } from "expo-router";
 import { api, euro, euroShort } from "@/lib/api";
 import { useSession } from "@/lib/session";
+import { Formationsfeld } from "@/components/formation";
 import {
   ACCENT,
   Body,
@@ -109,15 +110,42 @@ export default function SquadScreen() {
   }
 
   function menue(p: SquadPlayer) {
-    Alert.alert(p.name, `${p.team.name} · ${euro(p.marketValue)}`, [
-      {
-        text: "Details ansehen",
-        onPress: () =>
-          router.push({ pathname: "/player/[id]", params: { id: String(p.playerId) } }),
-      },
-      { text: "Zum Verkauf anbieten", onPress: () => verkaufen(p) },
-      { text: "Abbrechen", style: "cancel" },
-    ]);
+    const drin = startelf.includes(p.playerId);
+    const platzFrei = besetzung[p.position].length < shape[p.position];
+
+    Alert.alert(
+      p.name,
+      `${p.team.name} · ${euro(p.marketValue)} · ${p.gesamtpunkte} Punkte${
+        p.schnitt === null ? "" : ` (Ø ${p.schnitt})`
+      }`,
+      [
+        {
+          text: "Details ansehen",
+          onPress: () =>
+            router.push({ pathname: "/player/[id]", params: { id: String(p.playerId) } }),
+        },
+        ...(gesperrt
+          ? []
+          : drin
+            ? [
+                {
+                  text: "Aus der Startelf nehmen",
+                  onPress: () =>
+                    setStartelf((vorher) => vorher.filter((id) => id !== p.playerId)),
+                },
+              ]
+            : platzFrei
+              ? [
+                  {
+                    text: `In die Startelf (${LABEL[p.position]})`,
+                    onPress: () => setStartelf((vorher) => [...vorher, p.playerId]),
+                  },
+                ]
+              : []),
+        { text: "Zum Verkauf anbieten", onPress: () => verkaufen(p) },
+        { text: "Abbrechen", style: "cancel" as const },
+      ],
+    );
   }
 
   function verkaufen(p: SquadPlayer) {
@@ -253,61 +281,47 @@ export default function SquadScreen() {
         </Body>
       )}
 
-      {/* Die Aufstellung: je Formationsplatz eine Zeile, leer oder besetzt. */}
-      {REIHENFOLGE.map((pos) => (
-        <View key={pos} style={{ gap: 8 }}>
-          <Body dim>
-            {LABEL[pos]} · {besetzung[pos].length}/{shape[pos]}
-            {besetzung[pos].length === shape[pos] ? " ✓" : ""}
-          </Body>
+      {/* Die Aufstellung auf dem Platz, darunter derselbe Kader als Liste. */}
+      <Formationsfeld
+        shape={shape}
+        besetzung={besetzung}
+        gesperrt={gesperrt}
+        onLeer={setWahl}
+        onSpieler={menue}
+      />
+      <Body dim>
+        {formation} · {startelf.length}/11 aufgestellt
+        {gesperrt ? " · eingefroren" : " · Tippen öffnet den Spieler"}
+      </Body>
 
-          {Array.from({ length: shape[pos] }, (_, i) => {
-            const p = besetzung[pos][i];
-            if (!p) {
+      {REIHENFOLGE.map((pos) => {
+        const gruppe = spieler.filter((p) => p.position === pos);
+        if (gruppe.length === 0) return null;
+        return (
+          <View key={pos} style={{ gap: 8 }}>
+            <Body dim>
+              {LABEL[pos]} · {besetzung[pos].length}/{shape[pos]}
+              {besetzung[pos].length === shape[pos] ? " ✓" : ""}
+            </Body>
+            {gruppe.map((p) => {
+              const drin = startelf.includes(p.playerId);
               return (
-                <Pressable
-                  key={`${pos}-leer-${i}`}
-                  onPress={() => setWahl(pos)}
-                  disabled={gesperrt}
-                >
-                  <View style={[styles.leer, { borderColor: c.textSecondary }]}>
-                    <Body style={[styles.plus, { color: ACCENT }]}>＋</Body>
-                    <Body dim>{LABEL[pos]} besetzen</Body>
-                  </View>
+                <Pressable key={p.playerId} onPress={() => menue(p)}>
+                  <Card
+                    style={
+                      drin
+                        ? { borderWidth: 2, borderColor: ACCENT }
+                        : { opacity: 0.75 }
+                    }
+                  >
+                    <SpielerZeile p={p} />
+                  </Card>
                 </Pressable>
               );
-            }
-            return (
-              <Pressable
-                key={p.playerId}
-                onPress={() =>
-                  !gesperrt &&
-                  setStartelf((vorher) => vorher.filter((id) => id !== p.playerId))
-                }
-                onLongPress={() => menue(p)}
-              >
-                <Card style={{ borderWidth: 2, borderColor: ACCENT }}>
-                  <SpielerZeile p={p} rechts={gesperrt ? null : "✕"} />
-                </Card>
-              </Pressable>
-            );
-          })}
-        </View>
-      ))}
-
-      {bank.length > 0 && (
-        <>
-          <Body dim>Bank · {bank.length}</Body>
-          {bank.map((p) => (
-            <Pressable key={p.playerId} onPress={() => menue(p)}>
-              <Card style={{ opacity: 0.75 }}>
-                <SpielerZeile p={p} rechts={null} />
-              </Card>
-            </Pressable>
-          ))}
-          <Body dim>Tippen öffnet Details und Verkauf.</Body>
-        </>
-      )}
+            })}
+          </View>
+        );
+      })}
 
       {squad && squad.kaderGroesse > 0 && !gesperrt && (
         <Button
@@ -342,7 +356,7 @@ export default function SquadScreen() {
                 }}
               >
                 <Card>
-                  <SpielerZeile p={p} rechts={null} />
+                  <SpielerZeile p={p} />
                 </Card>
               </Pressable>
             ))}
@@ -354,7 +368,7 @@ export default function SquadScreen() {
   );
 }
 
-function SpielerZeile({ p, rechts }: { p: SquadPlayer; rechts: string | null }) {
+function SpielerZeile({ p }: { p: SquadPlayer }) {
   const c = useColors();
   return (
     <View style={styles.zeile}>
@@ -376,9 +390,10 @@ function SpielerZeile({ p, rechts }: { p: SquadPlayer; rechts: string | null }) 
       </View>
       <View style={{ alignItems: "flex-end" }}>
         <Body style={styles.punkte}>{p.gesamtpunkte}</Body>
-        <Body dim>Punkte</Body>
+        <Body dim>
+          {p.schnitt === null ? "Punkte" : `Ø ${p.schnitt} · ${p.spieltage} Sp.`}
+        </Body>
       </View>
-      {rechts ? <Body style={{ color: c.textSecondary, fontSize: 20 }}>{rechts}</Body> : null}
     </View>
   );
 }
@@ -391,17 +406,6 @@ const styles = StyleSheet.create({
   foto: { width: 40, height: 40, borderRadius: 20 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 },
-  leer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderStyle: "dashed",
-    paddingVertical: 18,
-    paddingHorizontal: 14,
-  },
-  plus: { fontSize: 20, fontWeight: "700" },
   backdrop: {
     position: "absolute",
     top: 0,

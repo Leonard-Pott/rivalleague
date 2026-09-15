@@ -134,6 +134,37 @@ export default function PlayerScreen() {
         )}
       </Card>
 
+      {/* Ein Spiel je Zeile, neueste zuerst - die Zahl hinter dem Schnitt. */}
+      {p.punkteVerlauf.length > 0 && (
+        <Card>
+          <Body dim>Punkte je Spiel</Body>
+          {[...p.punkteVerlauf].reverse().map((s) => (
+            <View key={s.matchday} style={styles.spiel}>
+              <Body dim style={styles.spieltag}>
+                {s.matchday}.
+              </Body>
+              <View style={{ flex: 1 }}>
+                <Body numberOfLines={1}>
+                  {s.gegner
+                    ? `${s.heimspiel ? "gegen" : "bei"} ${s.gegner}`
+                    : `Spieltag ${s.matchday}`}
+                  {s.ergebnis ? ` · ${s.ergebnis}` : ""}
+                </Body>
+                {s.minuten !== null && <Body dim>{s.minuten} Minuten</Body>}
+              </View>
+              <Body
+                style={[
+                  styles.gross,
+                  { color: s.points < 0 ? "#E5484D" : c.text },
+                ]}
+              >
+                {s.points > 0 ? `+${s.points}` : s.points}
+              </Body>
+            </View>
+          ))}
+        </Card>
+      )}
+
       {p.naechstesSpiel && (
         <Card>
           <Body dim>Nächstes Spiel · Spieltag {p.naechstesSpiel.matchday}</Body>
@@ -186,5 +217,7 @@ const styles = StyleSheet.create({
   zeile: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
   foto: { width: 64, height: 64, borderRadius: 32 },
   gross: { fontSize: 18, fontWeight: "700" },
+  spiel: { flexDirection: "row", alignItems: "center", gap: 10 },
+  spieltag: { width: 26, textAlign: "right" },
   name: { fontSize: 16, fontWeight: "600" },
 });

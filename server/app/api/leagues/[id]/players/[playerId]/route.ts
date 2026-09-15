@@ -37,17 +37,37 @@ export const GET = handle(async (req: Request, ctx: Ctx) => {
     include: { bids: { where: { managerId: me.id } } },
   });
 
-  const naechstesSpiel = await prisma.match.findFirst({
-    where: {
-      finished: false,
-      OR: [{ homeTeamId: player.teamId }, { awayTeamId: player.teamId }],
-    },
+  // Alle Partien des Vereins auf einmal: daraus faellt sowohl der Gegner je
+  // gespieltem Spieltag ab als auch das naechste Spiel. Zwei Abfragen waeren
+  // dieselbe Tabelle zweimal.
+  const spiele = await prisma.match.findMany({
+    where: { OR: [{ homeTeamId: player.teamId }, { awayTeamId: player.teamId }] },
     orderBy: { kickoff: "asc" },
     include: {
       home: { select: { name: true } },
       away: { select: { name: true } },
     },
   });
+
+  const gegnerAm = new Map(
+    spiele.map((m) => {
+      const heimspiel = m.homeTeamId === player.teamId;
+      return [
+        m.matchday,
+        {
+          gegner: heimspiel ? m.away.name : m.home.name,
+          heimspiel,
+          ergebnis:
+            m.homeGoals === null || m.awayGoals === null
+              ? null
+              : heimspiel
+                ? `${m.homeGoals}:${m.awayGoals}`
+                : `${m.awayGoals}:${m.homeGoals}`,
+        },
+      ];
+    }),
+  );
+  const naechstesSpiel = spiele.find((m) => !m.finished) ?? null;
 
   const punkte = player.points.map((p) => p.points);
 
@@ -63,7 +83,13 @@ export const GET = handle(async (req: Request, ctx: Ctx) => {
       date: v.date.toISOString().slice(0, 10),
       value: v.value,
     })),
-    punkteVerlauf: player.points.map((p) => ({ matchday: p.matchday, points: p.points })),
+    /** Ein Eintrag je bestrittenem Spiel, aelteste zuerst. */
+    punkteVerlauf: player.points.map((p) => ({
+      matchday: p.matchday,
+      points: p.points,
+      minuten: (p.statsJson as { minutes?: number } | null)?.minutes ?? null,
+      ...(gegnerAm.get(p.matchday) ?? { gegner: null, heimspiel: null, ergebnis: null }),
+    })),
     gesamtpunkte: punkte.reduce((s, p) => s + p, 0),
     schnitt: punkte.length ? Math.round(punkte.reduce((s, p) => s + p, 0) / punkte.length) : null,
     /** Ohne Vorsaisondaten ist der Startwert nur geschaetzt - das gehoert dazugesagt. */

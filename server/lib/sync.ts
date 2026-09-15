@@ -16,6 +16,15 @@ export function season(): number {
 }
 
 /**
+ * Saison, aus der die Startmarktwerte stammen. Eine eigene Variable, weil sie
+ * nicht mit der laufenden Saison mitwandert: der Free-Tier gibt die aktuelle
+ * Statistik nicht her, freigeschaltet ist nur bis 2024.
+ */
+export function statsSeason(): number {
+  return Number(process.env.STATS_SEASON ?? 2024);
+}
+
+/**
  * Ersetzt einen Cron. Laeuft beim API-Aufruf und tut nur etwas, wenn der Job
  * abgelaufen ist. Kostet nichts, wenn zehn Freunde gleichzeitig die App
  * oeffnen - der Zeitstempel haengt am Job, nicht am Nutzer.
@@ -149,12 +158,11 @@ export async function syncSquads(
 }
 
 /**
- * Startmarktwerte aus einer freigeschalteten Vorsaison. Der Free-Tier sperrt
- * 2025 und 2026, deshalb ist 2024 die juengste nutzbare Datenlage. Die
+ * Startmarktwerte aus einer freigeschalteten Vorsaison (STATS_SEASON). Die
  * taegliche Marktwert-Engine zieht das binnen weniger Wochen gerade.
  */
 export async function seedMarketValues(
-  statsSeason = 2024,
+  saison = statsSeason(),
   maxTeams = 18,
   pagesPerTeam = 2,
 ): Promise<{ teams: number; players: number; offen: number; geschaetzt: number }> {
@@ -180,7 +188,7 @@ export async function seedMarketValues(
     );
 
     for (let page = 1; page <= pagesPerTeam; page++) {
-      const res = await provider.fetchTeamSeasonPlayers(team.id, statsSeason, page);
+      const res = await provider.fetchTeamSeasonPlayers(team.id, saison, page);
 
       for (const s of res.players) {
         const position = known.get(s.playerId);

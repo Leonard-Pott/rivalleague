@@ -3,6 +3,7 @@ import { requireUser, HttpError } from "@/lib/auth";
 import { handle } from "@/lib/http";
 import { uniqueInviteCode } from "@/lib/invite";
 import { ensureFreeAgents } from "@/lib/market-db";
+import { season } from "@/lib/sync";
 
 export const POST = handle(async (req: Request) => {
   const user = await requireUser(req);
@@ -15,7 +16,7 @@ export const POST = handle(async (req: Request) => {
   const league = await prisma.league.create({
     data: {
       name: name.trim(),
-      season: Number(process.env.SEASON ?? new Date().getFullYear()),
+      season: season(),
       inviteCode: await uniqueInviteCode(),
     },
   });

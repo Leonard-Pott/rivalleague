@@ -22,7 +22,7 @@ const JOBS: Record<string, (params: URLSearchParams) => Promise<unknown>> = {
   /** Startmarktwerte aus der Vorsaison. ~38 Aufrufe, einmalig. */
   marketvalues: (p) =>
     sync.seedMarketValues(
-      Number(p.get("season") ?? 2024),
+      Number(p.get("season") ?? sync.statsSeason()),
       Number(p.get("limit") ?? 18),
       Number(p.get("pages") ?? 2),
     ),

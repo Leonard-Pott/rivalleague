@@ -62,6 +62,8 @@ export type SquadPlayer = {
   boughtFor: number;
   gewinn: number;
   gesamtpunkte: number;
+  schnitt: number | null;
+  spieltage: number;
   letztePunkte: number | null;
   isStarter: boolean;
 };
@@ -135,7 +137,14 @@ export type PlayerDetail = {
   team: { id: number; name: string; logoUrl: string | null };
   marketValue: number;
   kursverlauf: { date: string; value: number }[];
-  punkteVerlauf: { matchday: number; points: number }[];
+  punkteVerlauf: {
+    matchday: number;
+    points: number;
+    minuten: number | null;
+    gegner: string | null;
+    heimspiel: boolean | null;
+    ergebnis: string | null;
+  }[];
   gesamtpunkte: number;
   schnitt: number | null;
   wertGeschaetzt: boolean;
