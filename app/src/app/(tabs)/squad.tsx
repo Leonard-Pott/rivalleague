@@ -221,20 +221,6 @@ export default function SquadScreen() {
   }
 
   /**
-   * Auf dem Platz geht es um die Aufstellung, nicht um den Spieler: wer hier
-   * tippt, will tauschen oder herausnehmen. Marktwert, Punkte, Verkauf - das
-   * steht in der Kaderliste unter dem Feld.
-   */
-  function platzMenue(p: SquadPlayer, pos: Position, index: number) {
-    if (gesperrt) return; // Spieltag laeuft, es wird nicht mehr getauscht
-    Alert.alert(p.name, `${LABEL[pos]} · Platz ${index + 1}`, [
-      { text: "Austauschen", onPress: () => setWahl({ pos, index }) },
-      { text: "Rausnehmen", onPress: () => besetze(pos, index, null) },
-      { text: "Abbrechen", style: "cancel" },
-    ]);
-  }
-
-  /**
    * Drei Eintraege und keiner mehr: Android zeigt von einem Alert hoechstens
    * drei Knoepfe, ein vierter faellt kommentarlos weg - und das waere hier
    * ausgerechnet "Abbrechen".
@@ -376,9 +362,7 @@ export default function SquadScreen() {
         shape={shape}
         besetzung={besetzung}
         gesperrt={gesperrt}
-        onLeer={(pos, index) => setWahl({ pos, index })}
-        onSpieler={platzMenue}
-        onEntfernen={(pos, index) => besetze(pos, index, null)}
+        onPlatz={(pos, index) => setWahl({ pos, index })}
       />
       <Body dim>
         {formation} · {aufgestellt.length}/11 aufgestellt
@@ -445,6 +429,16 @@ export default function SquadScreen() {
                 </Card>
               </Pressable>
             ))}
+            {wahl && besetzung[wahl.pos][wahl.index] && (
+              <Button
+                label={`${besetzung[wahl.pos][wahl.index]?.name} rausnehmen`}
+                variant="ghost"
+                onPress={() => {
+                  besetze(wahl.pos, wahl.index, null);
+                  setWahl(null);
+                }}
+              />
+            )}
             <Button label="Abbrechen" variant="ghost" onPress={() => setWahl(null)} />
           </ScrollView>
         </View>

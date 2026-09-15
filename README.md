@@ -21,8 +21,8 @@ aus den echten Spielen des Wochenendes.
   eigenes Tor unten, Angriff oben — wie die Aufstellungsgrafik einer Übertragung.
   Sieben Formationen, jeder Platz wird einzeln besetzt und die Auswahl zeigt nur
   Spieler der passenden Position. Auf dem Platz geht es nur um die Aufstellung:
-  antippen heißt austauschen oder rausnehmen, das ✕ am Spieler nimmt ihn direkt
-  heraus. Jede Änderung geht sofort zum Server, auch die halb fertige Elf — es gibt
+  jeder Platz öffnet dieselbe Auswahl, bei einem besetzten steht darunter der Knopf
+  zum Rausnehmen. Jede Änderung geht sofort zum Server, auch die halb fertige Elf — es gibt
   keinen Speichern-Knopf, den man vergessen kann. Darunter liegt der komplette Kader
   nach Positionen sortiert, und dort stehen auch Marktwert, Punkte, Spielerdetails
   und der Verkauf. Mit Anpfiff des Spieltags friert die Aufstellung ein.

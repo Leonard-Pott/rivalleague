@@ -18,17 +18,14 @@ export function Formationsfeld({
   shape,
   besetzung,
   gesperrt,
-  onLeer,
-  onSpieler,
-  onEntfernen,
+  onPlatz,
 }: {
   shape: Record<Position, number>;
   /** Ein Eintrag je Formationsplatz, null heisst unbesetzt. */
   besetzung: Record<Position, (SquadPlayer | null)[]>;
   gesperrt: boolean;
-  onLeer: (pos: Position, index: number) => void;
-  onSpieler: (p: SquadPlayer, pos: Position, index: number) => void;
-  onEntfernen: (pos: Position, index: number) => void;
+  /** Ein Platz wird angetippt - besetzt oder nicht, es geht immer um denselben Platz. */
+  onPlatz: (pos: Position, index: number) => void;
 }) {
   return (
     <View style={styles.platz}>
@@ -54,13 +51,13 @@ export function Formationsfeld({
               <Platz
                 key={`${pos}-${i}`}
                 p={p}
-                onPress={() => onSpieler(p, pos, i)}
-                onEntfernen={gesperrt ? null : () => onEntfernen(pos, i)}
+                onPress={() => onPlatz(pos, i)}
+                disabled={gesperrt}
               />
             ) : (
               <Leer
                 key={`${pos}-${i}`}
-                onPress={() => onLeer(pos, i)}
+                onPress={() => onPlatz(pos, i)}
                 disabled={gesperrt}
               />
             );
@@ -74,32 +71,21 @@ export function Formationsfeld({
 function Platz({
   p,
   onPress,
-  onEntfernen,
+  disabled,
 }: {
   p: SquadPlayer;
   onPress: () => void;
-  /** Null, solange der Spieltag laeuft - dann wird nichts mehr getauscht. */
-  onEntfernen: (() => void) | null;
+  disabled: boolean;
 }) {
   // Nur der Nachname: auf einem Feld mit fuenf Spielern nebeneinander ist
   // fuer mehr kein Platz, und im Fussball reicht er ohnehin.
   const nachname = p.name.split(" ").slice(-1)[0];
   return (
-    <Pressable style={styles.slot} onPress={onPress}>
+    <Pressable style={styles.slot} onPress={onPress} disabled={disabled}>
       {p.photoUrl ? (
         <Image source={{ uri: p.photoUrl }} style={styles.foto} />
       ) : (
         <View style={[styles.foto, styles.fotoLeer]} />
-      )}
-      {onEntfernen && (
-        <Pressable
-          style={styles.raus}
-          onPress={onEntfernen}
-          hitSlop={10}
-          accessibilityLabel={`${p.name} aus der Aufstellung nehmen`}
-        >
-          <Body style={styles.rausZeichen}>✕</Body>
-        </Pressable>
       )}
       {/* Haengt unter dem Kreis, ohne ihn zu verschieben: sonst rutscht eine
           besetzte Reihe nach oben und das Feld steht schief. */}
@@ -174,20 +160,6 @@ const styles = StyleSheet.create({
   // Die Hoehe ist der Kreis, nicht der Kreis samt Namen - ein besetzter Platz
   // muss genauso hoch sein wie ein leerer, sonst springt die Reihe.
   slot: { alignItems: "center", width: 62, height: 42 },
-  raus: {
-    position: "absolute",
-    top: -4,
-    right: 6,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#000000AA",
-    borderWidth: 1,
-    borderColor: "#FFFFFF88",
-  },
-  rausZeichen: { color: "#fff", fontSize: 10, lineHeight: 12, fontWeight: "700" },
   foto: {
     width: 42,
     height: 42,
