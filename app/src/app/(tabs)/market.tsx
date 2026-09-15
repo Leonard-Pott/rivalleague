@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { Image, Pressable, RefreshControl, StyleSheet, View } from "react-native";
+import { Pressable, RefreshControl, StyleSheet, View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { api, euro, euroShort } from "@/lib/api";
 import { useSession } from "@/lib/session";
@@ -10,9 +10,9 @@ import {
   ErrorText,
   Field,
   Screen,
+  SpielerFoto,
   Title,
   useAkzent,
-  useColors,
   useTon,
 } from "@/components/ui";
 import type { Market, Offer } from "@/types";
@@ -29,7 +29,6 @@ function restzeit(iso: string): string {
 export default function MarktScreen() {
   const { token, activeLeagueId } = useSession();
   const router = useRouter();
-  const c = useColors();
   const akzent = useAkzent();
   const ton = useTon();
 
@@ -164,11 +163,7 @@ export default function MarktScreen() {
               }}
             >
               <View style={styles.zeile}>
-                {o.photoUrl ? (
-                  <Image source={{ uri: o.photoUrl }} style={styles.foto} />
-                ) : (
-                  <View style={[styles.foto, { backgroundColor: c.backgroundSelected }]} />
-                )}
+                <SpielerFoto photoUrl={o.photoUrl} logoUrl={o.team.logoUrl} />
                 <View style={{ flex: 1 }}>
                   <Body style={styles.name}>{o.name}</Body>
                   <Body dim>

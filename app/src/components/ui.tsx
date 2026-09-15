@@ -1,5 +1,6 @@
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -25,6 +26,11 @@ export { useAkzent };
 /** Vereinsfarbe als leiser Untergrund - fuer das, was einem selbst gehoert. */
 export function useTon(): string {
   return useThemeMode().ton;
+}
+
+/** Vereinsfarbe, die als Schrift auf dem Hintergrund lesbar bleibt. */
+export function useSchrift(): string {
+  return useThemeMode().schrift;
 }
 
 export function Screen({
@@ -113,8 +119,8 @@ export function Button({
   variant?: "primary" | "ghost";
   disabled?: boolean;
 }) {
-  const c = useColors();
   const akzent = useAkzent();
+  const { ton, schrift } = useThemeMode();
   const off = disabled || busy;
   return (
     <Pressable
@@ -124,23 +130,65 @@ export function Button({
         styles.button,
         variant === "primary"
           ? { backgroundColor: akzent.farbe }
-          : { backgroundColor: c.backgroundElement },
+          : { backgroundColor: ton },
         (pressed || off) && { opacity: 0.6 },
       ]}
     >
       {busy ? (
-        <ActivityIndicator color={variant === "primary" ? akzent.text : c.text} />
+        <ActivityIndicator color={variant === "primary" ? akzent.text : schrift} />
       ) : (
         <Text
           style={[
             styles.buttonLabel,
-            { color: variant === "primary" ? akzent.text : c.text },
+            { color: variant === "primary" ? akzent.text : schrift },
           ]}
         >
           {label}
         </Text>
       )}
     </Pressable>
+  );
+}
+
+/**
+ * Spielerfoto mit dem Vereinswappen in der Ecke. Ohne das Wappen muss man den
+ * Vereinsnamen lesen, um zu wissen, wer da spielt - das Wappen erkennt man,
+ * bevor man liest.
+ */
+export function SpielerFoto({
+  photoUrl,
+  logoUrl,
+  groesse = 40,
+}: {
+  photoUrl?: string | null;
+  logoUrl?: string | null;
+  groesse?: number;
+}) {
+  const c = useColors();
+  const kreis = { width: groesse, height: groesse, borderRadius: groesse / 2 };
+  const wappen = Math.round(groesse * 0.45);
+  return (
+    <View style={kreis}>
+      {photoUrl ? (
+        <Image source={{ uri: photoUrl }} style={kreis} />
+      ) : (
+        <View style={[kreis, { backgroundColor: c.backgroundSelected }]} />
+      )}
+      {logoUrl && (
+        <Image
+          source={{ uri: logoUrl }}
+          style={{
+            position: "absolute",
+            right: -2,
+            bottom: -2,
+            width: wappen,
+            height: wappen,
+            borderRadius: wappen / 2,
+            backgroundColor: c.background,
+          }}
+        />
+      )}
+    </View>
   );
 }
 

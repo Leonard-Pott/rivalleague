@@ -1,9 +1,18 @@
 import { useCallback, useState } from "react";
-import { Image, Pressable, RefreshControl, StyleSheet, View } from "react-native";
+import { Pressable, RefreshControl, StyleSheet, View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { api, euroShort } from "@/lib/api";
 import { useSession } from "@/lib/session";
-import { Body, Card, ErrorText, Screen, Title, useColors } from "@/components/ui";
+import {
+  Body,
+  Card,
+  ErrorText,
+  Screen,
+  SpielerFoto,
+  Title,
+  useAkzent,
+  useTon,
+} from "@/components/ui";
 import type { Activity, ActivityEntry } from "@/types";
 
 /** "vor 3 Std" - bei einem Feed zaehlt der Abstand, nicht das Datum. */
@@ -28,7 +37,8 @@ function zeile(e: ActivityEntry): string {
 export default function ActivityScreen() {
   const { token, activeLeagueId } = useSession();
   const router = useRouter();
-  const c = useColors();
+  const akzent = useAkzent();
+  const ton = useTon();
   const [data, setData] = useState<Activity | null>(null);
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
@@ -82,7 +92,13 @@ export default function ActivityScreen() {
       {data?.eintraege.map((e) => (
         <Card
           key={e.id}
-          style={e.binIchBeteiligt ? { borderWidth: 1, borderColor: c.textSecondary } : undefined}
+          // Was mit dem eigenen Team zu tun hat, traegt die Vereinsfarbe -
+          // derselbe Griff wie in Tabelle, Kader und Markt.
+          style={
+            e.binIchBeteiligt
+              ? { borderWidth: 2, borderColor: akzent.farbe, backgroundColor: ton }
+              : undefined
+          }
         >
           <Pressable
             onPress={() =>
@@ -90,11 +106,7 @@ export default function ActivityScreen() {
             }
           >
             <View style={styles.row}>
-              {e.photoUrl ? (
-                <Image source={{ uri: e.photoUrl }} style={styles.foto} />
-              ) : (
-                <View style={[styles.foto, { backgroundColor: c.backgroundSelected }]} />
-              )}
+              <SpielerFoto photoUrl={e.photoUrl} logoUrl={e.team.logoUrl} />
               <View style={{ flex: 1 }}>
                 <Body style={styles.name} numberOfLines={1}>
                   {e.name}

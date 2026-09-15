@@ -8,7 +8,13 @@ import {
 import { useColorScheme } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSession } from "@/lib/session";
-import { STANDARDFARBE, VEREINSFARBEN, type Vereinsfarbe } from "@/constants/vereinsfarben";
+import {
+  STANDARDFARBE,
+  VEREINSFARBEN,
+  helligkeit,
+  mischen,
+  type Vereinsfarbe,
+} from "@/constants/vereinsfarben";
 
 const KEY = "rivalleague.theme";
 
@@ -23,6 +29,12 @@ type Value = {
   akzent: Vereinsfarbe;
   /** Dieselbe Farbe als leiser Untergrund, fuer hervorgehobene Karten. */
   ton: string;
+  /**
+   * Die Vereinsfarbe als Schrift auf dem Hintergrund. Flaechen bleiben immer
+   * die echte Farbe - aber Dortmunds Gelb als Text auf Weiss liest niemand,
+   * deshalb wird nur fuer Schrift nachgedunkelt oder aufgehellt.
+   */
+  schrift: string;
 };
 
 const Ctx = createContext<Value | null>(null);
@@ -57,9 +69,20 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const verein = me?.user.favoriteTeam?.id;
   const akzent = (verein && VEREINSFARBEN[verein]) || STANDARDFARBE;
   const ton = `${akzent.farbe}${scheme === "dark" ? "33" : "1A"}`;
+  const hell = helligkeit(akzent.farbe);
+  const schrift =
+    scheme === "dark"
+      ? hell < 0.3
+        ? mischen(akzent.farbe, "#ffffff", 0.45)
+        : akzent.farbe
+      : hell > 0.55
+        ? mischen(akzent.farbe, "#000000", 0.45)
+        : akzent.farbe;
 
   return (
-    <Ctx.Provider value={{ mode, scheme, setMode, akzent, ton }}>{children}</Ctx.Provider>
+    <Ctx.Provider value={{ mode, scheme, setMode, akzent, ton, schrift }}>
+      {children}
+    </Ctx.Provider>
   );
 }
 
@@ -73,6 +96,7 @@ export function useThemeMode(): Value {
       setMode: () => {},
       akzent: STANDARDFARBE,
       ton: `${STANDARDFARBE.farbe}1A`,
+      schrift: STANDARDFARBE.farbe,
     }
   );
 }

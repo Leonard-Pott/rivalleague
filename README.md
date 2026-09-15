@@ -34,10 +34,13 @@ aus den echten Spielen des Wochenendes.
   seine Form der letzten drei Spieltage angepasst.
 - **Aktivitätenfeed.** Alle Käufe und Verkäufe der Mitspieler und alles, was neu auf
   dem Markt liegt, in einem Zeitstrahl.
+- **Vereinswappen an jedem Spieler**, in Kader, Markt, Aufstellungsauswahl und Feed —
+  von welchem Verein einer kommt, sieht man, bevor man den Namen liest.
 - **Die App in den Farben des eigenen Vereins.** Beim ersten Start wählt man seinen
   Lieblingsverein aus der Liga; von da an trägt die Kopfzeile sein Wappen und seine
   Farbe, und Knöpfe, aktiver Reiter, Formationschips und die eigenen Karten in Tabelle,
-  Kader und Markt sind darauf abgestimmt. Die Farbe ist in hell und dunkel dieselbe —
+  Kader, Markt und Aktivität sind darauf abgestimmt — alles, was mit dem eigenen Team
+  zu tun hat, trägt dieselbe Farbe. Die Farbe ist in hell und dunkel dieselbe —
   Schalkes Blau ist Schalkes Blau. Der Verein hängt am Konto, nicht an der Liga, und
   lässt sich im Profil wechseln.
 - **Profil und Einstellungen** hinter dem Kreis oben rechts: dort steht der Verein, in
@@ -67,8 +70,10 @@ keinen einzigen API-Aufruf.
 **Vereinsfarben stehen im Code.** Weder API-Football noch OpenLigaDB liefern sie, und
 eine Farbe ändert sich seltener als ein Kader — also eine Tabelle in
 `app/src/constants/vereinsfarben.ts`, je Verein ein Farbwert und die Schrift, die
-darauf lesbar ist (bei Dortmunds Gelb muss sie dunkel sein). Gefärbt werden nur
-Flächen, nie Fließtext: so bleibt jede Schrift lesbar, egal wie hell der Verein spielt.
+darauf lesbar ist (bei Dortmunds Gelb muss sie dunkel sein). Fließtext bleibt immer
+die normale Textfarbe; wo die Vereinsfarbe doch einmal Schrift ist — auf den ruhigen
+Knöpfen —, wird sie vorher gegen den Hintergrund abgedunkelt oder aufgehellt, sonst
+läse niemand Gelb auf Weiß.
 
 **Zwei Datenquellen, bewusst.** Spieler und Statistiken kommen von API-Football, der
 Spielplan von OpenLigaDB. Grund: Im kostenlosen Tarif von API-Football ist nur ein

@@ -34,3 +34,18 @@ export const VEREINSFARBEN: Record<number, Vereinsfarbe> = {
 
 /** Ohne Lieblingsverein bleibt es beim Blau der App. */
 export const STANDARDFARBE: Vereinsfarbe = { farbe: "#208AEF", text: "#fff" };
+
+/** Wie hell eine Farbe wirkt, 0 bis 1. */
+export function helligkeit(hex: string): number {
+  const n = parseInt(hex.slice(1), 16);
+  return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+}
+
+/** Mischt zwei Farben. Fuer Schrift, die auf dem Hintergrund lesbar bleiben muss. */
+export function mischen(hex: string, ziel: string, anteil: number): string {
+  const a = parseInt(hex.slice(1), 16);
+  const b = parseInt(ziel.slice(1), 16);
+  const kanal = (v: number) =>
+    Math.round(((a >> v) & 255) + (((b >> v) & 255) - ((a >> v) & 255)) * anteil);
+  return `#${((kanal(16) << 16) | (kanal(8) << 8) | kanal(0)).toString(16).padStart(6, "0")}`;
+}

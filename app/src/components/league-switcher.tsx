@@ -89,7 +89,7 @@ export function LeagueSwitcher() {
         <View
           style={[
             styles.sheet,
-            { backgroundColor: c.background, paddingTop: insets.top },
+            { backgroundColor: c.background, paddingTop: insets.top + 8 },
           ]}
         >
           <ScrollView contentContainerStyle={styles.sheetInner} keyboardShouldPersistTaps="handled">
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   pfeil: { fontSize: 18, opacity: 0.85 },
   kreis: { alignItems: "center", justifyContent: "center" },
   initiale: { fontWeight: "700" },
-  ligaName: { fontSize: 22, fontWeight: "700", flexShrink: 1 },
+  ligaName: { fontSize: 22, lineHeight: 28, fontWeight: "700", flexShrink: 1 },
   backdrop: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "#0008" },
   sheet: { maxHeight: "85%", borderBottomLeftRadius: 18, borderBottomRightRadius: 18 },
   sheetInner: { padding: 16, gap: 10 },

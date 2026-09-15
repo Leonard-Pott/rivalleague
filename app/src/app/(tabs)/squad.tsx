@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
   Alert,
-  Image,
   Modal,
   Pressable,
   RefreshControl,
@@ -19,6 +18,7 @@ import {
   Card,
   ErrorText,
   Screen,
+  SpielerFoto,
   Title,
   useAkzent,
   useColors,
@@ -487,14 +487,9 @@ function Bogen({
 }
 
 function SpielerZeile({ p }: { p: SquadPlayer }) {
-  const c = useColors();
   return (
     <View style={styles.zeile}>
-      {p.photoUrl ? (
-        <Image source={{ uri: p.photoUrl }} style={styles.foto} />
-      ) : (
-        <View style={[styles.foto, { backgroundColor: c.backgroundSelected }]} />
-      )}
+      <SpielerFoto photoUrl={p.photoUrl} logoUrl={p.team.logoUrl} />
       <View style={{ flex: 1 }}>
         <Body style={styles.name} numberOfLines={1}>
           {p.name}
