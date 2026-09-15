@@ -1,0 +1,265 @@
+// Geld ist ueberall Int in ganzen Euro. Kein Float, keine Cents.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String    @id @default(cuid())
+  name      String
+  email     String?   @unique
+  googleSub String?   @unique
+  image     String?
+  createdAt DateTime  @default(now())
+  managers  Manager[]
+}
+
+model League {
+  id              String    @id @default(cuid())
+  name            String
+  inviteCode      String    @unique
+  startBudget     Int       @default(50000000)
+  season          Int
+  marketCloseHour Int       @default(22)
+  createdAt       DateTime  @default(now())
+  managers        Manager[]
+  listings        Listing[]
+  rosters         Roster[]
+  transfers       Transfer[]
+}
+
+model Manager {
+  id        String          @id @default(cuid())
+  userId    String
+  leagueId  String
+  teamName  String
+  budget    Int
+  createdAt DateTime        @default(now())
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  league    League          @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  roster    Roster[]
+  listings  Listing[]       @relation("seller")
+  bids      Bid[]
+  lineups   Lineup[]
+  points    ManagerPoints[]
+  values    ManagerValue[]
+  kaeufe    Transfer[]      @relation("buyer")
+  verkaeufe Transfer[]      @relation("seller")
+
+  @@unique([userId, leagueId])
+  @@index([leagueId])
+}
+
+/// Verbindet die beiden Datenquellen: API-Football liefert Spieler und
+/// Statistiken, OpenLigaDB den Spielplan. Ohne diese Zuordnung waere nicht
+/// erkennbar, dass Team 157 und OpenLigaDB-Team 40 derselbe Verein sind.
+model Team {
+  id          Int      @id // API-Football team id
+  name        String
+  openligaId  Int      @unique
+  logoUrl     String?
+  /// Wann der Kader zuletzt geholt wurde. Steuert die Reihenfolge, damit ein
+  /// abgebrochener Lauf dort weitermacht statt von vorn zu beginnen.
+  squadSyncedAt DateTime?
+  players     Player[]
+  homeMatches Match[]  @relation("home")
+  awayMatches Match[]  @relation("away")
+}
+
+/// Spielplan aus OpenLigaDB. Die ganze Saison ist dort frei abrufbar - im
+/// Free-Tier von API-Football waere nur ein Fenster von heute +/- 1 Tag
+/// sichtbar, damit gaebe es keine Aufstellungs-Deadline im Voraus.
+model Match {
+  id            Int       @id // OpenLigaDB matchID
+  matchday      Int
+  kickoff       DateTime
+  homeTeamId    Int
+  awayTeamId    Int
+  finished      Boolean   @default(false)
+  homeGoals     Int?
+  awayGoals     Int?
+  /// API-Football fixture id, sobald das Spiel im Tagesfenster auftaucht.
+  fixtureId     Int?      @unique
+  statsSyncedAt DateTime?
+  home          Team      @relation("home", fields: [homeTeamId], references: [id], onDelete: Cascade)
+  away          Team      @relation("away", fields: [awayTeamId], references: [id], onDelete: Cascade)
+
+  @@index([matchday])
+  @@index([kickoff])
+}
+
+// Spieler und Marktwerte sind global, nicht pro Liga.
+model Player {
+  id          Int           @id // API-Football player id
+  name        String
+  position    Position
+  teamId      Int
+  team        Team          @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  photoUrl    String?
+  marketValue Int           @default(0)
+  /// Rohe Vorsaison-Statistik, aus der der Startwert berechnet wurde.
+  /// Ohne sie wuerde jede Neukalibrierung der Formel erneut API-Kontingent
+  /// kosten - und das Kontingent ist die knappste Ressource im Projekt.
+  seedStats   Json?
+  values      PlayerValue[]
+  points      PlayerPoints[]
+  rosters     Roster[]
+  listings    Listing[]
+  slots       LineupSlot[]
+  transfers   Transfer[]
+
+  @@index([teamId])
+}
+
+enum Position {
+  GK
+  DEF
+  MID
+  FWD
+}
+
+model PlayerValue {
+  id       Int      @id @default(autoincrement())
+  playerId Int
+  date     DateTime @db.Date
+  value    Int
+  player   Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, date])
+}
+
+// Zentrale Invariante des Spiels: ein Spieler gehoert pro Liga genau einem Manager.
+model Roster {
+  id        String   @id @default(cuid())
+  managerId String
+  leagueId  String
+  playerId  Int
+  boughtFor Int
+  boughtAt  DateTime @default(now())
+  manager   Manager  @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  league    League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([leagueId, playerId])
+  @@index([managerId])
+}
+
+model Listing {
+  id         String    @id @default(cuid())
+  leagueId   String
+  playerId   Int
+  sellerId   String? // null = freier Spieler vom Markt
+  price      Int // Marktwert zum Zeitpunkt des Listings, Mindestgebot
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime
+  resolvedAt DateTime?
+  league     League    @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  player     Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  seller     Manager?  @relation("seller", fields: [sellerId], references: [id], onDelete: Cascade)
+  bids       Bid[]
+
+  @@index([leagueId, resolvedAt])
+}
+
+model Bid {
+  id        String   @id @default(cuid())
+  listingId String
+  managerId String
+  amount    Int
+  createdAt DateTime @default(now())
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  manager   Manager  @relation(fields: [managerId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, managerId])
+}
+
+/// Abgeschlossene Transfers. Der Roster-Eintrag kennt nur den aktuellen
+/// Besitzer - beim Weiterverkauf waere der vorherige Kauf sonst spurlos weg.
+/// Ohne diese Zeilen gaebe es keine Aktivitaeten-Ansicht.
+model Transfer {
+  id        String   @id @default(cuid())
+  leagueId  String
+  playerId  Int
+  buyerId   String
+  sellerId  String? // null = vom freien Markt gekauft
+  price     Int
+  createdAt DateTime @default(now())
+  league    League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  buyer     Manager  @relation("buyer", fields: [buyerId], references: [id], onDelete: Cascade)
+  seller    Manager? @relation("seller", fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([leagueId, createdAt])
+}
+
+model Lineup {
+  id        String       @id @default(cuid())
+  managerId String
+  matchday  Int
+  formation String
+  manager   Manager      @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  slots     LineupSlot[]
+
+  @@unique([managerId, matchday])
+}
+
+model LineupSlot {
+  id        String  @id @default(cuid())
+  lineupId  String
+  playerId  Int
+  isStarter Boolean @default(true)
+  lineup    Lineup  @relation(fields: [lineupId], references: [id], onDelete: Cascade)
+  player    Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([lineupId, playerId])
+}
+
+model PlayerPoints {
+  id        Int      @id @default(autoincrement())
+  playerId  Int
+  matchday  Int
+  points    Int
+  statsJson Json
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, matchday])
+  @@index([matchday])
+}
+
+model ManagerPoints {
+  id        Int     @id @default(autoincrement())
+  managerId String
+  matchday  Int
+  points    Int
+  manager   Manager @relation(fields: [managerId], references: [id], onDelete: Cascade)
+
+  @@unique([managerId, matchday])
+}
+
+/// Taeglicher Schnappschuss pro Manager. Der Teamwert liesse sich zwar aus
+/// Kader und Kursverlauf zurueckrechnen - aber nur, solange niemand
+/// transferiert. Ein Verkauf macht die Rueckrechnung falsch, deshalb wird
+/// der Wert festgehalten statt hergeleitet.
+model ManagerValue {
+  id        Int      @id @default(autoincrement())
+  managerId String
+  date      DateTime @db.Date
+  teamValue Int
+  budget    Int
+  manager   Manager  @relation(fields: [managerId], references: [id], onDelete: Cascade)
+
+  @@unique([managerId, date])
+}
+
+model SyncState {
+  key       String   @id
+  lastRunAt DateTime
+}
+
+model ApiUsage {
+  day   String @id // YYYY-MM-DD (UTC), Reset-Rhythmus des Anbieters
+  calls Int    @default(0)
+}

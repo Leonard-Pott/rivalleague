@@ -1,0 +1,18 @@
+node_modules/
+.next/
+.expo/
+dist/
+build/
+*.log
+
+# Secrets: nur die Vorlage wird versioniert
+.env
+.env.*
+!.env.example
+
+# Generierte native Ordner
+/app/ios/
+/app/android/
+
+# IDE-Konfiguration bleibt lokal
+.idea/
