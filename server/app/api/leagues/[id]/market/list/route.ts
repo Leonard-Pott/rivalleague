@@ -33,8 +33,10 @@ export const POST = handle(async (req: Request, ctx: Ctx) => {
       leagueId,
       playerId,
       sellerId: me.id,
-      // Der Marktwert ist das Mindestgebot - unter Wert verkauft niemand.
+      // Nur die Historie: gezahlt wird der Marktwert am Tag des Zuschlags.
       price: roster.player.marketValue,
+      // Erster Stichtag. Findet sich niemand, rollt das Angebot beim
+      // Abrechnen auf den naechsten - eigene Spieler liegen unbegrenzt drin.
       expiresAt: nextMarketClose(me.league.marketCloseHour),
     },
   });

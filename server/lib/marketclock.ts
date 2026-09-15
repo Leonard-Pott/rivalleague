@@ -8,6 +8,9 @@
  */
 const ZONE = "Europe/Berlin";
 
+/** Stunde, zu der die Marktwerte angepasst werden. */
+export const KURS_STUNDE = 22;
+
 /** Verschiebung der deutschen Ortszeit gegenueber UTC zu diesem Zeitpunkt. */
 export function zoneOffsetMs(at: Date): number {
   // "en-CA" liefert ISO-nahes YYYY-MM-DD, das sich verlaesslich zurueckparsen laesst.
@@ -42,6 +45,19 @@ export function nextMarketClose(hour: number, now: Date = new Date()): Date {
   for (let tagesVersatz = 0; tagesVersatz <= 2; tagesVersatz++) {
     const kandidat = closeOnDay(hour, now, tagesVersatz);
     if (kandidat.getTime() > now.getTime()) return kandidat;
+  }
+  throw new Error("Kein Marktschluss gefunden");
+}
+
+/**
+ * Letzter Marktschluss vor `now`. Damit laesst sich ein Job an die Uhrzeit
+ * binden statt an ein Alter: gelaufen wird, wenn der letzte Lauf aelter ist
+ * als dieser Zeitpunkt.
+ */
+export function lastMarketClose(hour: number, now: Date = new Date()): Date {
+  for (let tagesVersatz = 0; tagesVersatz >= -2; tagesVersatz--) {
+    const kandidat = closeOnDay(hour, now, tagesVersatz);
+    if (kandidat.getTime() <= now.getTime()) return kandidat;
   }
   throw new Error("Kein Marktschluss gefunden");
 }

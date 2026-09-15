@@ -27,6 +27,7 @@ export const GET = handle(async (req: Request, ctx: Ctx) => {
       name: true,
       position: true,
       photoUrl: true,
+      marketValue: true,
       team: { select: { id: true, name: true, logoUrl: true } },
     },
   };
@@ -76,7 +77,8 @@ export const GET = handle(async (req: Request, ctx: Ctx) => {
       position: l.player.position,
       photoUrl: l.player.photoUrl,
       team: l.player.team,
-      preis: l.price,
+      /** Mindestgebot - immer der aktuelle Marktwert. */
+      preis: l.player.marketValue,
       kaeufer: null,
       verkaeufer: l.seller ? { managerId: l.seller.id, teamName: l.seller.teamName } : null,
       binIchBeteiligt: l.sellerId === me.id,

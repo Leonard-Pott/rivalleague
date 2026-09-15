@@ -57,8 +57,8 @@ export const GET = handle(async (req: Request, ctx: Ctx) => {
       photoUrl: l.player.photoUrl,
       team: l.player.team,
       marketValue: l.player.marketValue,
-      /** Mindestgebot. */
-      price: l.price,
+      /** Mindestgebot - immer der aktuelle Marktwert. */
+      price: l.player.marketValue,
       expiresAt: l.expiresAt,
       verkaeufer: l.seller ? { managerId: l.seller.id, teamName: l.seller.teamName } : null,
       istMeiner: l.sellerId === me.id,

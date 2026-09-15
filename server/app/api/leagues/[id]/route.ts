@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { requireManager } from "@/lib/auth";
 import { handle } from "@/lib/http";
 import { activeMatchday } from "@/lib/matchday";
+import { KURS_STUNDE, lastMarketClose } from "@/lib/marketclock.ts";
 import { LIVE_REFRESH_MINUTES, QuotaExceeded, RateLimited } from "@/lib/provider";
 import {
   ensureFresh,
@@ -28,7 +29,10 @@ async function keepFresh(): Promise<string[]> {
     ["live", LIVE_REFRESH_MINUTES, syncLiveMatches],
     [
       "prices",
-      24 * STUNDE,
+      // An die Uhrzeit gebunden statt an ein Alter: gelaufen wird, wenn der
+      // letzte Lauf vor dem gestrigen Marktschluss liegt. Sonst wandert die
+      // Anpassung mit demjenigen, der morgens als Erster die App oeffnet.
+      (Date.now() - lastMarketClose(KURS_STUNDE).getTime()) / 60_000,
       async () => {
         await updateMarketValues();
         // Direkt danach, damit der Schnappschuss den neuen Kurs zeigt.

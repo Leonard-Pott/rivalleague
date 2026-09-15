@@ -436,7 +436,25 @@ export async function syncLiveMatches(): Promise<{ spiele: number; eintraege: nu
   return { spiele: offen.length, eintraege };
 }
 
-/** Summiert die Punkte der Startelf jedes Managers fuer einen Spieltag. */
+/**
+ * Geld je Spieltagspunkt. Eine Startelf holt ueblicherweise um die hundert
+ * Punkte, das sind rund zwei Millionen - genug, damit die Liga nicht
+ * trockenlaeuft. Ohne Praemie kann die Geldmenge nur sinken: Kaeufe vom
+ * freien Markt nehmen Geld aus dem Spiel, zurueck kommt keines.
+ *
+ * ponytail: geraten, nach fuenf Spieltagen gegen die echte Punkteverteilung nachziehen.
+ */
+export const PRAEMIE_PRO_PUNKT = 20_000;
+
+/**
+ * Summiert die Punkte der Startelf jedes Managers fuer einen Spieltag und
+ * schreibt die Praemie gut.
+ *
+ * Laeuft waehrend eines Spieltags mehrfach, deshalb wird nur die Differenz
+ * zum bisherigen Punktestand ausgezahlt - sonst gaebe es die Praemie bei
+ * jedem Live-Abgleich erneut. Faellt ein Wert nachtraeglich, wird die
+ * Differenz auch wieder abgezogen.
+ */
 export async function recomputeManagerPoints(matchday: number): Promise<number> {
   const lineups = await prisma.lineup.findMany({
     where: { matchday },
@@ -450,16 +468,34 @@ export async function recomputeManagerPoints(matchday: number): Promise<number> 
     ]),
   );
 
+  const bisher = new Map(
+    (await prisma.managerPoints.findMany({ where: { matchday } })).map((p) => [
+      p.managerId,
+      p.points,
+    ]),
+  );
+
   for (const lineup of lineups) {
     const total = lineup.slots.reduce(
       (sum, slot) => sum + (pointsByPlayer.get(slot.playerId) ?? 0),
       0,
     );
-    await prisma.managerPoints.upsert({
-      where: { managerId_matchday: { managerId: lineup.managerId, matchday } },
-      update: { points: total },
-      create: { managerId: lineup.managerId, matchday, points: total },
-    });
+    const delta = total - (bisher.get(lineup.managerId) ?? 0);
+    if (delta === 0) continue;
+
+    // Punkte und Geld gehoeren zusammen: ein halber Lauf duerfte weder die
+    // Praemie doppelt noch gar nicht auszahlen.
+    await prisma.$transaction([
+      prisma.managerPoints.upsert({
+        where: { managerId_matchday: { managerId: lineup.managerId, matchday } },
+        update: { points: total },
+        create: { managerId: lineup.managerId, matchday, points: total },
+      }),
+      prisma.manager.update({
+        where: { id: lineup.managerId },
+        data: { budget: { increment: delta * PRAEMIE_PRO_PUNKT } },
+      }),
+    ]);
   }
   return lineups.length;
 }

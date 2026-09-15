@@ -17,7 +17,10 @@ export const POST = handle(async (req: Request, ctx: Ctx) => {
   }
   const gebot = Math.round(amount);
 
-  const listing = await prisma.listing.findUnique({ where: { id: listingId } });
+  const listing = await prisma.listing.findUnique({
+    where: { id: listingId },
+    include: { player: { select: { marketValue: true } } },
+  });
   if (!listing || listing.leagueId !== leagueId) {
     throw new HttpError(404, "Angebot gibt es nicht");
   }
@@ -28,8 +31,11 @@ export const POST = handle(async (req: Request, ctx: Ctx) => {
   if (listing.sellerId === me.id) {
     throw new HttpError(400, "Auf eigene Spieler kann man nicht bieten");
   }
-  if (gebot < listing.price) {
-    throw new HttpError(400, `Mindestgebot sind ${listing.price.toLocaleString("de-DE")} Euro`);
+  // Nicht der Preis beim Einstellen zaehlt, sondern der Marktwert von heute -
+  // ein Angebot kann wochenlang liegen, der Kurs laeuft derweil weiter.
+  const mindestens = listing.player.marketValue;
+  if (gebot < mindestens) {
+    throw new HttpError(400, `Mindestgebot sind ${mindestens.toLocaleString("de-DE")} Euro`);
   }
 
   const kaderGroesse = await prisma.roster.count({ where: { managerId: me.id } });

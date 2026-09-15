@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { nextMarketClose, zoneOffsetMs } from "./marketclock.ts";
+import { lastMarketClose, nextMarketClose, zoneOffsetMs } from "./marketclock.ts";
 
 /**
  * Wie spaet ist es in Deutschland zu diesem UTC-Zeitpunkt?
@@ -56,4 +56,17 @@ test("frueher Marktschluss am selben Tag wird noch erwischt", () => {
   const now = new Date("2026-07-15T08:00:00Z");
   const stundenBis = (nextMarketClose(22, now).getTime() - now.getTime()) / 3600_000;
   assert.ok(stundenBis > 0 && stundenBis < 13, `${stundenBis} Stunden`);
+});
+
+test("Letzter Marktschluss liegt hoechstens 24 Stunden zurueck und trifft die Stunde", () => {
+  // Quer durchs Jahr, damit auch die Umstellungstage drankommen.
+  for (let tag = 0; tag < 365; tag += 7) {
+    const jetzt = new Date(Date.UTC(2026, 0, 1, 13, 37) + tag * 86_400_000);
+    const letzter = lastMarketClose(22, jetzt);
+    assert.ok(letzter.getTime() <= jetzt.getTime(), "darf nicht in der Zukunft liegen");
+    assert.ok(jetzt.getTime() - letzter.getTime() <= 25 * 3_600_000, "hoechstens einen Tag her");
+    assert.equal(berlinStunde(letzter), 22);
+    // Zwischen letztem und naechstem Schluss liegt genau ein Tag.
+    assert.ok(nextMarketClose(22, jetzt).getTime() > jetzt.getTime());
+  }
 });

@@ -1,4 +1,5 @@
 import { prisma } from "./db";
+import { nextMarketClose } from "./marketclock.ts";
 import {
   marktGroesse,
   zufallsLaufzeitMs,
@@ -107,6 +108,10 @@ export type ResolveResult = {
 /**
  * Loest alle abgelaufenen Angebote einer Liga auf.
  *
+ * Angebote von Mitspielern laufen nicht wirklich ab: findet sich kein
+ * Abnehmer, rollen sie auf den naechsten Marktschluss weiter. Ein Spieler
+ * liegt also so lange drin, bis jemand mindestens seinen Marktwert bietet.
+ *
  * Die Entscheidung faellt in planTransfers (rein und getestet), hier wird sie
  * nur angewendet - und zwar komplett in einer Transaktion. Ein halb
  * aufgeloester Markt, bei dem Geld abgebucht aber kein Spieler uebertragen
@@ -115,7 +120,7 @@ export type ResolveResult = {
 export async function resolveMarket(leagueId: string): Promise<ResolveResult> {
   const faellig = await prisma.listing.findMany({
     where: { leagueId, resolvedAt: null, expiresAt: { lte: new Date() } },
-    include: { bids: true },
+    include: { bids: true, player: { select: { marketValue: true } } },
   });
   if (faellig.length === 0) return { aufgeloest: 0, transfers: [] };
 
@@ -130,11 +135,13 @@ export async function resolveMarket(leagueId: string): Promise<ResolveResult> {
     squadSize: m._count.roster,
   }));
 
+  // Mindestpreis ist immer der aktuelle Marktwert, nicht der beim Einstellen:
+  // sonst verkauft ein wochenalter Aushang unter Wert.
   const angebote: PendingListing[] = faellig.map((l) => ({
     listingId: l.id,
     playerId: l.playerId,
     sellerId: l.sellerId,
-    price: l.price,
+    price: l.player.marketValue,
     bids: l.bids.map((b) => ({
       managerId: b.managerId,
       amount: b.amount,
@@ -191,11 +198,32 @@ export async function resolveMarket(leagueId: string): Promise<ResolveResult> {
       })),
     });
 
-    // Auch Angebote ohne Gewinner werden geschlossen, sonst haengen sie ewig.
+    const verkauft = new Set(transfers.map((t) => t.listingId));
+    const league = await tx.league.findUniqueOrThrow({
+      where: { id: leagueId },
+      select: { marketCloseHour: true },
+    });
+
+    // Freie Spieler verschwinden auch ohne Gebot wieder vom Markt, sonst
+    // haengen sie ewig. Angebote von Mitspielern bleiben stehen.
     await tx.listing.updateMany({
-      where: { id: { in: faellig.map((l) => l.id) } },
+      where: {
+        id: {
+          in: faellig
+            .filter((l) => verkauft.has(l.id) || l.sellerId === null)
+            .map((l) => l.id),
+        },
+      },
       data: { resolvedAt: jetzt },
     });
+
+    const weiterlaufen = faellig.filter((l) => l.sellerId && !verkauft.has(l.id));
+    if (weiterlaufen.length > 0) {
+      await tx.listing.updateMany({
+        where: { id: { in: weiterlaufen.map((l) => l.id) } },
+        data: { expiresAt: nextMarketClose(league.marketCloseHour, jetzt) },
+      });
+    }
   });
 
   return {

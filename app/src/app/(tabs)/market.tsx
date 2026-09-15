@@ -192,7 +192,10 @@ export default function MarktScreen() {
                 />
                 {o.istMeiner ? (
                   <>
-                    <Body dim>Dein Spieler steht zum Verkauf.</Body>
+                    <Body dim>
+                      Dein Spieler steht zum Verkauf. Er bleibt drauf, bis jemand
+                      mindestens seinen Marktwert bietet.
+                    </Body>
                     <Button
                       label="Vom Markt nehmen"
                       variant="ghost"

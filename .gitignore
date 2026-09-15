@@ -16,3 +16,6 @@ build/
 
 # IDE-Konfiguration bleibt lokal
 .idea/
+
+# Generierter Wissensgraph, wird lokal neu gebaut
+graphify-out/
