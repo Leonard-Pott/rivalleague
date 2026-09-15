@@ -4,16 +4,27 @@ import { HttpError } from "./guards";
 
 export { HttpError };
 
-const secret = new TextEncoder().encode(
-  process.env.JWT_SECRET ?? "insecure-fallback-dev-only",
-);
+/**
+ * Ohne gesetztes Secret signiert der Server mit einem Wert, der im
+ * Quelltext steht - jeder koennte sich dann ein gueltiges Token fuer einen
+ * fremden Account selbst ausstellen. In der Entwicklung ist das bequem, in
+ * Produktion waere es dasselbe wie gar keine Anmeldung, also: Abbruch.
+ */
+function secretBytes(): Uint8Array {
+  const value = process.env.JWT_SECRET;
+  if (value) return new TextEncoder().encode(value);
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("JWT_SECRET fehlt - ohne Secret wird nicht signiert");
+  }
+  return new TextEncoder().encode("insecure-fallback-dev-only");
+}
 
 export async function signToken(userId: string): Promise<string> {
   return new SignJWT({ sub: userId })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("180d") // Handy-App, die Saison soll durchhalten
-    .sign(secret);
+    .sign(secretBytes());
 }
 
 /** Liest den Bearer-Token. Gibt die userId zurueck oder null. */
@@ -21,7 +32,7 @@ export async function userIdFromRequest(req: Request): Promise<string | null> {
   const header = req.headers.get("authorization");
   if (!header?.startsWith("Bearer ")) return null;
   try {
-    const { payload } = await jwtVerify(header.slice(7), secret);
+    const { payload } = await jwtVerify(header.slice(7), secretBytes());
     return typeof payload.sub === "string" ? payload.sub : null;
   } catch {
     return null;

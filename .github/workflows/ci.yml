@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  server:
+    name: Server - Fachlogik
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      # Der Prisma-Client wird zur Laufzeit importiert, auch von den reinen
+      # Modulen her - ohne generate schlaegt schon der Import fehl.
+      - run: npx prisma generate
+        env:
+          DATABASE_URL: postgresql://unused:unused@localhost:5432/unused
+      # Braucht keine Datenbank: getestet wird nur, was ohne sie auskommt.
+      - run: npm test
