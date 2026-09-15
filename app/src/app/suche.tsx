@@ -5,13 +5,13 @@ import { api, euroShort } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import {
   Body,
-  Button,
   Card,
   ErrorText,
   Field,
   Screen,
   SpielerFoto,
   Title,
+  Zurueck,
   useAkzent,
   useColors,
   useSchrift,
@@ -46,33 +46,30 @@ export default function SucheScreen() {
     [activeLeagueId, token],
   );
 
-  const suchen = useCallback(
-    async (begriff: string) => {
-      setLaeuft(true);
-      setError("");
-      try {
-        setTreffer((await hole(begriff)).treffer);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Suche fehlgeschlagen");
-      } finally {
-        setLaeuft(false);
-      }
-    },
-    [hole],
-  );
-
-  // Beim Öffnen die Scouting-Liste, danach erst auf Tastendruck.
+  /**
+   * Gesucht wird beim Tippen, aber nicht bei jedem Buchstaben: eine kurze
+   * Pause spart dem Server sechs Anfragen fuer einen Namen. Ohne Eingabe holt
+   * derselbe Weg die Scouting-Liste.
+   */
   useEffect(() => {
     let aktuell = true;
-    hole("")
-      .then((r) => {
-        if (aktuell) setTreffer(r.treffer);
-      })
-      .catch(() => {});
+    const warten = setTimeout(() => {
+      setLaeuft(true);
+      hole(q)
+        .then((r) => aktuell && setTreffer(r.treffer))
+        .catch(
+          (e: unknown) =>
+            aktuell &&
+            setError(e instanceof Error ? e.message : "Suche fehlgeschlagen"),
+        )
+        .finally(() => aktuell && setLaeuft(false));
+    }, 300);
+
     return () => {
       aktuell = false;
+      clearTimeout(warten);
     };
-  }, [hole]);
+  }, [q, hole]);
 
   async function merken(t: Treffer) {
     setTreffer((vorher) =>
@@ -86,37 +83,32 @@ export default function SucheScreen() {
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Hat nicht geklappt");
-      void suchen(q);
     }
   }
 
   return (
     <Screen>
-      <Pressable onPress={() => router.back()}>
-        <Body dim>‹ Zurück</Body>
-      </Pressable>
+      <Zurueck onPress={() => router.back()} />
 
       <Title>Suche</Title>
 
-      <View style={styles.zeile}>
-        <View style={{ flex: 1 }}>
-          <Field
-            placeholder="Spielername"
-            value={q}
-            onChangeText={setQ}
-            autoCorrect={false}
-            returnKeyType="search"
-            onSubmitEditing={() => suchen(q)}
-          />
-        </View>
-        <Button label="Suchen" onPress={() => suchen(q)} busy={laeuft} />
-      </View>
+      <Field
+        placeholder="Spielername"
+        value={q}
+        onChangeText={setQ}
+        autoCorrect={false}
+        autoFocus
+        returnKeyType="search"
+      />
 
       <ErrorText>{error}</ErrorText>
 
       <Body dim>
-        {q.trim() ? `Treffer für „${q.trim()}“` : "Beobachtete Spieler"}
-        {treffer.length ? ` · ${treffer.length}` : ""}
+        {laeuft
+          ? "sucht …"
+          : `${q.trim() ? `Treffer für „${q.trim()}“` : "Beobachtete Spieler"}${
+              treffer.length ? ` · ${treffer.length}` : ""
+            }`}
       </Body>
 
       {treffer.length === 0 && !laeuft && (

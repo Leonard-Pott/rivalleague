@@ -3,7 +3,16 @@ import { useRouter } from "expo-router";
 import { useSession } from "@/lib/session";
 import { useThemeMode, type ThemeMode } from "@/lib/theme";
 import { Profilkreis } from "@/components/league-switcher";
-import { Body, Button, Card, Screen, Title, useAkzent, useColors } from "@/components/ui";
+import {
+  Body,
+  Button,
+  Card,
+  Screen,
+  Title,
+  Zurueck,
+  useAkzent,
+  useColors,
+} from "@/components/ui";
 
 const ANZEIGE: { mode: ThemeMode; label: string; hinweis: string }[] = [
   { mode: "system", label: "System", hinweis: "folgt dem Telefon" },
@@ -21,9 +30,7 @@ export default function SettingsScreen() {
 
   return (
     <Screen>
-      <Pressable onPress={() => router.back()}>
-        <Body dim>‹ Zurück</Body>
-      </Pressable>
+      <Zurueck onPress={() => router.back()} />
 
       <View style={styles.kopf}>
         <Profilkreis name={me?.user.name} bild={me?.user.image ?? null} groesse={64} />

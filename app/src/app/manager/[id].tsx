@@ -11,6 +11,7 @@ import {
   Screen,
   SpielerFoto,
   Title,
+  Zurueck,
   useColors,
 } from "@/components/ui";
 import type { ManagerDetail, Position } from "@/types";
@@ -70,9 +71,7 @@ export default function ManagerScreen() {
 
   return (
     <Screen>
-      <Pressable onPress={() => router.back()}>
-        <Body dim>‹ Zurück</Body>
-      </Pressable>
+      <Zurueck onPress={() => router.back()} />
 
       <Title>{m.teamName}</Title>
       <Body dim>von {m.managerName}</Body>

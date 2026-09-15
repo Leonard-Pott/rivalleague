@@ -11,6 +11,7 @@ import {
   ErrorText,
   Screen,
   Title,
+  Zurueck,
   useAkzent,
   useColors,
 } from "@/components/ui";
@@ -87,9 +88,7 @@ export default function PlayerScreen() {
 
   return (
     <Screen>
-      <Pressable onPress={() => router.back()}>
-        <Body dim>‹ Zurück</Body>
-      </Pressable>
+      <Zurueck onPress={() => router.back()} />
 
       <View style={styles.kopf}>
         {p.photoUrl ? (

@@ -43,7 +43,7 @@ aus den echten Spielen des Wochenendes.
 - **Aktivitätenfeed.** Alle Käufe und Verkäufe der Mitspieler und alles, was neu auf
   dem Markt liegt, in einem Zeitstrahl.
 - **Suche und Scouting.** Über dem Transfermarkt liegt eine Suche über alle Spieler
-  der Liga. Bei jedem Treffer steht, ob er noch zu haben ist: frei, auf dem Markt, im
+  der Liga, die schon beim Tippen antwortet. Bei jedem Treffer steht, ob er noch zu haben ist: frei, auf dem Markt, im
   eigenen Kader oder — mit Namen — im Kader eines Mitspielers. Wer interessant
   aussieht, bekommt einen Stern und steht beim nächsten Öffnen der Suche ganz oben.
 - **Vereinswappen an jedem Spieler**, in Kader, Markt, Aufstellungsauswahl und Feed —

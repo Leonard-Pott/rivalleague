@@ -192,6 +192,29 @@ export function SpielerFoto({
   );
 }
 
+/**
+ * Zurueck als Knopf statt als Textzeile: ein "‹ Zurück" im Fliesstext sieht
+ * nicht aus wie etwas, das man druecken kann, und der Rand in Vereinsfarbe
+ * sagt nebenbei, in wessen App man ist.
+ */
+export function Zurueck({ onPress }: { onPress: () => void }) {
+  const akzent = useAkzent();
+  const schrift = useSchrift();
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      style={({ pressed }) => [
+        styles.zurueck,
+        { borderColor: akzent.farbe },
+        pressed && { opacity: 0.6 },
+      ]}
+    >
+      <Text style={[styles.zurueckLabel, { color: schrift }]}>‹ Zurück</Text>
+    </Pressable>
+  );
+}
+
 export function Field(props: TextInputProps) {
   const c = useColors();
   return (
@@ -232,11 +255,22 @@ const styles = StyleSheet.create({
   button: {
     borderRadius: 12,
     paddingVertical: 14,
+    // Waagerechte Luft, damit ein Knopf neben einer Ueberschrift nicht nur so
+    // breit ist wie sein Wort.
+    paddingHorizontal: 20,
     alignItems: "center",
     justifyContent: "center",
     minHeight: 50,
   },
   buttonLabel: { fontSize: 16, fontWeight: "600" },
+  zurueck: {
+    alignSelf: "flex-start",
+    borderWidth: 1.5,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  zurueckLabel: { fontSize: 15, fontWeight: "600" },
   field: {
     borderRadius: 12,
     paddingHorizontal: 14,
