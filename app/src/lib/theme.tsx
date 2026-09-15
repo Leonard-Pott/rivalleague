@@ -8,13 +8,7 @@ import {
 import { useColorScheme } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSession } from "@/lib/session";
-import {
-  STANDARDFARBE,
-  VEREINSFARBEN,
-  aufhellen,
-  helligkeit,
-  type Vereinsfarbe,
-} from "@/constants/vereinsfarben";
+import { STANDARDFARBE, VEREINSFARBEN, type Vereinsfarbe } from "@/constants/vereinsfarben";
 
 const KEY = "rivalleague.theme";
 
@@ -27,6 +21,8 @@ type Value = {
   setMode: (m: ThemeMode) => void;
   /** Farbe des Lieblingsvereins, sonst das Blau der App. */
   akzent: Vereinsfarbe;
+  /** Dieselbe Farbe als leiser Untergrund, fuer hervorgehobene Karten. */
+  ton: string;
 };
 
 const Ctx = createContext<Value | null>(null);
@@ -56,24 +52,29 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const scheme: Scheme = mode === "system" ? (vomSystem === "dark" ? "dark" : "light") : mode;
 
-  const verein = me?.user.favoriteTeamId;
-  const gewaehlt = (verein && VEREINSFARBEN[verein]) || STANDARDFARBE;
-  // Dunkelblau auf schwarzem Grund verschwindet. Im Dunkelmodus wird eine
-  // dunkle Vereinsfarbe aufgehellt, damit Knoepfe noch Knoepfe sind.
-  const akzent: Vereinsfarbe =
-    scheme === "dark" && helligkeit(gewaehlt.farbe) < 0.35
-      ? { farbe: aufhellen(gewaehlt.farbe, 0.3), text: gewaehlt.text }
-      : gewaehlt;
+  // Dieselbe Farbe in hell und dunkel: Schalkes Blau ist Schalkes Blau, und
+  // eine Vereinsfarbe, die je nach Modus anders aussieht, ist keine.
+  const verein = me?.user.favoriteTeam?.id;
+  const akzent = (verein && VEREINSFARBEN[verein]) || STANDARDFARBE;
+  const ton = `${akzent.farbe}${scheme === "dark" ? "33" : "1A"}`;
 
   return (
-    <Ctx.Provider value={{ mode, scheme, setMode, akzent }}>{children}</Ctx.Provider>
+    <Ctx.Provider value={{ mode, scheme, setMode, akzent, ton }}>{children}</Ctx.Provider>
   );
 }
 
 export function useThemeMode(): Value {
   const ctx = useContext(Ctx);
   // Ohne Provider bleibt es hell - besser als ein Absturz im Modal-Baum.
-  return ctx ?? { mode: "system", scheme: "light", setMode: () => {}, akzent: STANDARDFARBE };
+  return (
+    ctx ?? {
+      mode: "system",
+      scheme: "light",
+      setMode: () => {},
+      akzent: STANDARDFARBE,
+      ton: `${STANDARDFARBE.farbe}1A`,
+    }
+  );
 }
 
 /** Kurzer Weg zur Vereinsfarbe, weil fast jeder Aufrufer nur die braucht. */

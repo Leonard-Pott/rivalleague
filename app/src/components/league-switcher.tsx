@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Image, Modal, Pressable, ScrollView, Share, StyleSheet, View } from "react-native";
 import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api } from "@/lib/api";
 import { useSession } from "@/lib/session";
@@ -15,6 +16,7 @@ import { Body, Button, ErrorText, Field, useAkzent, useColors } from "@/componen
 export function LeagueSwitcher() {
   const { me, token, activeLeagueId, setActiveLeague, refresh } = useSession();
   const router = useRouter();
+  const akzent = useAkzent();
   const insets = useSafeAreaInsets();
   const c = useColors();
   const [offen, setOffen] = useState(false);
@@ -23,6 +25,8 @@ export function LeagueSwitcher() {
   const [error, setError] = useState("");
 
   const aktiv = me?.leagues.find((l) => l.leagueId === activeLeagueId);
+  const wappen = me?.user.favoriteTeam?.logoUrl ?? null;
+  const hellerText = akzent.text !== "#111";
 
   async function anlegen() {
     setBusy(true);
@@ -44,14 +48,26 @@ export function LeagueSwitcher() {
   }
 
   return (
-    <View style={{ paddingTop: insets.top, backgroundColor: c.background }}>
+    // Der Kopf traegt die Vereinsfarbe. Er ist die einzige Flaeche, die auf
+    // jedem Bildschirm zu sehen ist - deshalb faerbt sie die ganze App, ohne
+    // dass ein einziger Text unlesbar wird.
+    <View style={{ paddingTop: insets.top, backgroundColor: akzent.farbe }}>
+      <StatusBar style={hellerText ? "light" : "dark"} />
       <View style={styles.bar}>
         <Pressable
           onPress={() => setOffen(true)}
           style={({ pressed }) => [styles.liga, pressed && { opacity: 0.6 }]}
+          accessibilityLabel="Liga wechseln"
         >
-          <Body style={styles.ligaName}>{aktiv?.name ?? "Keine Liga"}</Body>
-          <Body dim>▾</Body>
+          {wappen && (
+            <View style={styles.wappenKreis}>
+              <Image source={{ uri: wappen }} style={styles.wappen} />
+            </View>
+          )}
+          <Body style={[styles.ligaName, { color: akzent.text }]} numberOfLines={1}>
+            {aktiv?.name ?? "Keine Liga"}
+          </Body>
+          <Body style={[styles.pfeil, { color: akzent.text }]}>▾</Body>
         </Pressable>
 
         <Pressable
@@ -59,7 +75,7 @@ export function LeagueSwitcher() {
           accessibilityLabel="Profil und Einstellungen"
           style={({ pressed }) => pressed && { opacity: 0.6 }}
         >
-          <Profilkreis name={me?.user.name} bild={me?.user.image ?? null} />
+          <Profilkreis name={me?.user.name} bild={me?.user.image ?? null} invertiert />
         </Pressable>
       </View>
 
@@ -140,17 +156,22 @@ export function Profilkreis({
   name,
   bild,
   groesse = 34,
+  invertiert = false,
 }: {
   name?: string;
   bild?: string | null;
   groesse?: number;
+  /** Auf farbigem Grund - dort waere ein Kreis in Vereinsfarbe unsichtbar. */
+  invertiert?: boolean;
 }) {
   const akzent = useAkzent();
   const kreis = { width: groesse, height: groesse, borderRadius: groesse / 2 };
   if (bild) return <Image source={{ uri: bild }} style={kreis} />;
+  const grund = invertiert ? akzent.text : akzent.farbe;
+  const schrift = invertiert ? akzent.farbe : akzent.text;
   return (
-    <View style={[kreis, styles.kreis, { backgroundColor: akzent.farbe }]}>
-      <Body style={[styles.initiale, { fontSize: groesse * 0.45, color: akzent.text }]}>
+    <View style={[kreis, styles.kreis, { backgroundColor: grund }]}>
+      <Body style={[styles.initiale, { fontSize: groesse * 0.45, color: schrift }]}>
         {(name ?? "?").trim().charAt(0).toUpperCase()}
       </Body>
     </View>
@@ -161,14 +182,26 @@ const styles = StyleSheet.create({
   bar: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 10,
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
+  // Groesserer Griff: die Liga ist der Kontext, in dem alles steht, und war
+  // als 17-Punkt-Zeile kaum als Knopf zu erkennen.
   liga: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
+  wappenKreis: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  wappen: { width: 24, height: 24 },
+  pfeil: { fontSize: 18, opacity: 0.85 },
   kreis: { alignItems: "center", justifyContent: "center" },
   initiale: { fontWeight: "700" },
-  ligaName: { fontSize: 17, fontWeight: "700" },
+  ligaName: { fontSize: 22, fontWeight: "700", flexShrink: 1 },
   backdrop: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "#0008" },
   sheet: { maxHeight: "85%", borderBottomLeftRadius: 18, borderBottomRightRadius: 18 },
   sheetInner: { padding: 16, gap: 10 },

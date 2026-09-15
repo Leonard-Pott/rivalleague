@@ -34,23 +34,3 @@ export const VEREINSFARBEN: Record<number, Vereinsfarbe> = {
 
 /** Ohne Lieblingsverein bleibt es beim Blau der App. */
 export const STANDARDFARBE: Vereinsfarbe = { farbe: "#208AEF", text: "#fff" };
-
-/**
- * Mischt eine Farbe mit Weiss. Dunkelblau auf schwarzem Grund ist sonst kaum
- * vom Hintergrund zu unterscheiden - im Dunkelmodus wird die Vereinsfarbe
- * deshalb aufgehellt, statt sie zu ersetzen.
- */
-export function aufhellen(hex: string, anteil: number): string {
-  const n = parseInt(hex.slice(1), 16);
-  const mische = (kanal: number) => Math.round(kanal + (255 - kanal) * anteil);
-  const r = mische((n >> 16) & 255);
-  const g = mische((n >> 8) & 255);
-  const b = mische(n & 255);
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`;
-}
-
-/** Wie hell eine Farbe wirkt, 0 bis 1 - entscheidet ueber die Schrift darauf. */
-export function helligkeit(hex: string): number {
-  const n = parseInt(hex.slice(1), 16);
-  return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
-}

@@ -65,7 +65,7 @@ export default function VereinScreen() {
 
       {teams.map((t) => {
         const farbe = VEREINSFARBEN[t.id] ?? STANDARDFARBE;
-        const gewaehlt = me?.user.favoriteTeamId === t.id;
+        const gewaehlt = me?.user.favoriteTeam?.id === t.id;
         return (
           <Pressable key={t.id} onPress={() => waehle(t.id)} disabled={busy !== null}>
             <Card

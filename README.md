@@ -6,7 +6,7 @@ wöchentlich auf und handelt mit den anderen auf einem Transfermarkt. Punkte kom
 aus den echten Spielen des Wochenendes.
 
 <p align="center">
-  <img src="docs/screenshots/ranking.png" width="200" alt="Ranking mit Tabelle und Vermögensverlauf">
+  <img src="docs/screenshots/ranking.png" width="200" alt="Ranking mit Tabelle und Vermögensverlauf in Vereinsfarbe">
   <img src="docs/screenshots/kader.png" width="200" alt="Kader mit der Startelf auf dem Spielfeld">
   <img src="docs/screenshots/markt.png" width="200" alt="Transfermarkt mit Angeboten">
   <img src="docs/screenshots/aktivitaet.png" width="200" alt="Aktivitätenfeed">
@@ -35,8 +35,10 @@ aus den echten Spielen des Wochenendes.
 - **Aktivitätenfeed.** Alle Käufe und Verkäufe der Mitspieler und alles, was neu auf
   dem Markt liegt, in einem Zeitstrahl.
 - **Die App in den Farben des eigenen Vereins.** Beim ersten Start wählt man seinen
-  Lieblingsverein aus der Liga; von da an sind Knöpfe, aktiver Reiter, Formationschips
-  und Profilkreis in Vereinsfarbe. Der Verein hängt am Konto, nicht an der Liga, und
+  Lieblingsverein aus der Liga; von da an trägt die Kopfzeile sein Wappen und seine
+  Farbe, und Knöpfe, aktiver Reiter, Formationschips und die eigenen Karten in Tabelle,
+  Kader und Markt sind darauf abgestimmt. Die Farbe ist in hell und dunkel dieselbe —
+  Schalkes Blau ist Schalkes Blau. Der Verein hängt am Konto, nicht an der Liga, und
   lässt sich im Profil wechseln.
 - **Profil und Einstellungen** hinter dem Kreis oben rechts: dort steht der Verein, in
   wie vielen Ligen man spielt, dort liegt die Abmeldung, und dort wählt man die
@@ -65,9 +67,8 @@ keinen einzigen API-Aufruf.
 **Vereinsfarben stehen im Code.** Weder API-Football noch OpenLigaDB liefern sie, und
 eine Farbe ändert sich seltener als ein Kader — also eine Tabelle in
 `app/src/constants/vereinsfarben.ts`, je Verein ein Farbwert und die Schrift, die
-darauf lesbar ist (bei Dortmunds Gelb muss sie dunkel sein). Im Dunkelmodus wird eine
-sehr dunkle Vereinsfarbe aufgehellt, sonst verschwände ein marineblauer Knopf auf
-schwarzem Grund.
+darauf lesbar ist (bei Dortmunds Gelb muss sie dunkel sein). Gefärbt werden nur
+Flächen, nie Fließtext: so bleibt jede Schrift lesbar, egal wie hell der Verein spielt.
 
 **Zwei Datenquellen, bewusst.** Spieler und Statistiken kommen von API-Football, der
 Spielplan von OpenLigaDB. Grund: Im kostenlosen Tarif von API-Football ist nur ein

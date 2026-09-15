@@ -22,6 +22,7 @@ import {
   Title,
   useAkzent,
   useColors,
+  useTon,
 } from "@/components/ui";
 import type { LineupState, Position, Squad, SquadPlayer } from "@/types";
 
@@ -114,6 +115,7 @@ export default function SquadScreen() {
   const router = useRouter();
   const c = useColors();
   const akzent = useAkzent();
+  const ton = useTon();
 
   const [squad, setSquad] = useState<Squad | null>(null);
   const [lineup, setLineup] = useState<LineupState | null>(null);
@@ -368,7 +370,7 @@ export default function SquadScreen() {
                   <Card
                     style={
                       drin
-                        ? { borderWidth: 2, borderColor: akzent.farbe }
+                        ? { borderWidth: 2, borderColor: akzent.farbe, backgroundColor: ton }
                         : { opacity: 0.75 }
                     }
                   >

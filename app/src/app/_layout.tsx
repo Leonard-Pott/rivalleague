@@ -18,7 +18,7 @@ function Gate() {
     if (token && onLogin) return router.replace("/");
     // Ohne Lieblingsverein geht es einmal durch die Wahl - die Farbe der App
     // haengt daran, und spaeter fragt niemand mehr danach.
-    if (token && me && me.user.favoriteTeamId === null && !onVerein) {
+    if (token && me && !me.user.favoriteTeam && !onVerein) {
       router.replace("/verein?erst=1");
     }
   }, [ready, token, me, segments]);

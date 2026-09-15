@@ -5,6 +5,14 @@ import { handle } from "@/lib/http";
 
 export const GET = handle(async (req: Request) => {
   const user = await requireUser(req);
+  // Wappen und Name gleich mit: die Kopfzeile zeigt beides, sonst braeuchte
+  // sie einen zweiten Aufruf fuer eine Zeile.
+  const favoriteTeam = user.favoriteTeamId
+    ? await prisma.team.findUnique({
+        where: { id: user.favoriteTeamId },
+        select: { id: true, name: true, logoUrl: true },
+      })
+    : null;
   const managers = await prisma.manager.findMany({
     where: { userId: user.id },
     include: { league: { select: { id: true, name: true, inviteCode: true } } },
@@ -16,7 +24,7 @@ export const GET = handle(async (req: Request) => {
       name: user.name,
       image: user.image,
       /** Faerbt die App. Null heisst: noch nicht gewaehlt, die App fragt danach. */
-      favoriteTeamId: user.favoriteTeamId,
+      favoriteTeam,
     },
     leagues: managers.map((m) => ({
       leagueId: m.league.id,

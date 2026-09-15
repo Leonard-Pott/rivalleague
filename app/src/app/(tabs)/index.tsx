@@ -4,12 +4,21 @@ import { useFocusEffect } from "expo-router";
 import { api, euroShort } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { Sparkline } from "@/components/sparkline";
-import { Body, Card, ErrorText, Screen, Title, useColors } from "@/components/ui";
+import {
+  Body,
+  Card,
+  ErrorText,
+  Screen,
+  Title,
+  useAkzent,
+  useTon,
+} from "@/components/ui";
 import type { LeagueDetail } from "@/types";
 
 export default function RankingScreen() {
   const { token, activeLeagueId } = useSession();
-  const c = useColors();
+  const akzent = useAkzent();
+  const ton = useTon();
   const [data, setData] = useState<LeagueDetail | null>(null);
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
@@ -58,7 +67,7 @@ export default function RankingScreen() {
 
       {data && (
         <>
-          <Card>
+          <Card style={{ backgroundColor: ton }}>
             <Body dim>Dein Team</Body>
             <Body style={styles.big}>{data.me.teamName}</Body>
             <Body dim>
@@ -87,10 +96,16 @@ export default function RankingScreen() {
           {data.table.map((row) => (
             <Card
               key={row.managerId}
-              style={row.isMe ? { borderWidth: 1, borderColor: c.textSecondary } : undefined}
+              style={
+                row.isMe
+                  ? { backgroundColor: ton, borderWidth: 2, borderColor: akzent.farbe }
+                  : undefined
+              }
             >
               <View style={styles.row}>
-                <Body style={styles.rank}>{row.rank}</Body>
+                <Body style={[styles.rank, row.isMe && { color: akzent.farbe }]}>
+                  {row.rank}
+                </Body>
                 <View style={{ flex: 1 }}>
                   <Body style={styles.name}>{row.teamName}</Body>
                   <Body dim>

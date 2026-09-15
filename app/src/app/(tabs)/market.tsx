@@ -13,6 +13,7 @@ import {
   Title,
   useAkzent,
   useColors,
+  useTon,
 } from "@/components/ui";
 import type { Market, Offer } from "@/types";
 
@@ -30,6 +31,7 @@ export default function MarktScreen() {
   const router = useRouter();
   const c = useColors();
   const akzent = useAkzent();
+  const ton = useTon();
 
   const [markt, setMarkt] = useState<Market | null>(null);
   const [offen, setOffen] = useState<string | null>(null);
@@ -148,7 +150,11 @@ export default function MarktScreen() {
         return (
           <Card
             key={o.listingId}
-            style={o.meinGebot ? { borderWidth: 2, borderColor: akzent.farbe } : undefined}
+            style={
+              o.meinGebot
+                ? { borderWidth: 2, borderColor: akzent.farbe, backgroundColor: ton }
+                : undefined
+            }
           >
             <Pressable
               onPress={() => {

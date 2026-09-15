@@ -22,6 +22,11 @@ export function useColors() {
 export const ACCENT = "#208AEF";
 export { useAkzent };
 
+/** Vereinsfarbe als leiser Untergrund - fuer das, was einem selbst gehoert. */
+export function useTon(): string {
+  return useThemeMode().ton;
+}
+
 export function Screen({
   children,
   scroll = true,

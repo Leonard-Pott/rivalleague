@@ -7,7 +7,7 @@ export type Me = {
     name: string;
     image: string | null;
     /** Lieblingsverein; null heisst, die App fragt beim naechsten Start danach. */
-    favoriteTeamId: number | null;
+    favoriteTeam: TeamSummary | null;
   };
   leagues: LeagueSummary[];
 };
