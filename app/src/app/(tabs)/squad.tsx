@@ -14,13 +14,13 @@ import { api, euro, euroShort } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { Formationsfeld } from "@/components/formation";
 import {
-  ACCENT,
   Body,
   Button,
   Card,
   ErrorText,
   Screen,
   Title,
+  useAkzent,
   useColors,
 } from "@/components/ui";
 import type { LineupState, Position, Squad, SquadPlayer } from "@/types";
@@ -113,6 +113,7 @@ export default function SquadScreen() {
   const { token, activeLeagueId } = useSession();
   const router = useRouter();
   const c = useColors();
+  const akzent = useAkzent();
 
   const [squad, setSquad] = useState<Squad | null>(null);
   const [lineup, setLineup] = useState<LineupState | null>(null);
@@ -318,7 +319,9 @@ export default function SquadScreen() {
                   onPress={() => wechsle(f)}
                   style={[
                     styles.chip,
-                    { backgroundColor: f === formation ? ACCENT : c.backgroundSelected },
+                    {
+                      backgroundColor: f === formation ? akzent.farbe : c.backgroundSelected,
+                    },
                   ]}
                 >
                   <Body style={{ color: f === formation ? "#fff" : c.text }}>{f}</Body>
@@ -365,7 +368,7 @@ export default function SquadScreen() {
                   <Card
                     style={
                       drin
-                        ? { borderWidth: 2, borderColor: ACCENT }
+                        ? { borderWidth: 2, borderColor: akzent.farbe }
                         : { opacity: 0.75 }
                     }
                   >

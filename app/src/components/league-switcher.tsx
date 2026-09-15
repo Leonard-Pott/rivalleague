@@ -5,7 +5,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api } from "@/lib/api";
 import { useSession } from "@/lib/session";
-import { ACCENT, Body, Button, ErrorText, Field, useColors } from "@/components/ui";
+import { Body, Button, ErrorText, Field, useAkzent, useColors } from "@/components/ui";
 
 /**
  * Kopfzeile ueber allen Tabs: zeigt die aktive Liga und wechselt sie.
@@ -145,11 +145,12 @@ export function Profilkreis({
   bild?: string | null;
   groesse?: number;
 }) {
+  const akzent = useAkzent();
   const kreis = { width: groesse, height: groesse, borderRadius: groesse / 2 };
   if (bild) return <Image source={{ uri: bild }} style={kreis} />;
   return (
-    <View style={[kreis, styles.kreis]}>
-      <Body style={[styles.initiale, { fontSize: groesse * 0.45 }]}>
+    <View style={[kreis, styles.kreis, { backgroundColor: akzent.farbe }]}>
+      <Body style={[styles.initiale, { fontSize: groesse * 0.45, color: akzent.text }]}>
         {(name ?? "?").trim().charAt(0).toUpperCase()}
       </Body>
     </View>
@@ -165,8 +166,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   liga: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
-  kreis: { backgroundColor: ACCENT, alignItems: "center", justifyContent: "center" },
-  initiale: { color: "#fff", fontWeight: "700" },
+  kreis: { alignItems: "center", justifyContent: "center" },
+  initiale: { fontWeight: "700" },
   ligaName: { fontSize: 17, fontWeight: "700" },
   backdrop: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "#0008" },
   sheet: { maxHeight: "85%", borderBottomLeftRadius: 18, borderBottomRightRadius: 18 },

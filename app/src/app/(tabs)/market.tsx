@@ -4,7 +4,6 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { api, euro, euroShort } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import {
-  ACCENT,
   Body,
   Button,
   Card,
@@ -12,6 +11,7 @@ import {
   Field,
   Screen,
   Title,
+  useAkzent,
   useColors,
 } from "@/components/ui";
 import type { Market, Offer } from "@/types";
@@ -29,6 +29,7 @@ export default function MarktScreen() {
   const { token, activeLeagueId } = useSession();
   const router = useRouter();
   const c = useColors();
+  const akzent = useAkzent();
 
   const [markt, setMarkt] = useState<Market | null>(null);
   const [offen, setOffen] = useState<string | null>(null);
@@ -147,7 +148,7 @@ export default function MarktScreen() {
         return (
           <Card
             key={o.listingId}
-            style={o.meinGebot ? { borderWidth: 2, borderColor: ACCENT } : undefined}
+            style={o.meinGebot ? { borderWidth: 2, borderColor: akzent.farbe } : undefined}
           >
             <Pressable
               onPress={() => {

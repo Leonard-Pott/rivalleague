@@ -34,9 +34,13 @@ aus den echten Spielen des Wochenendes.
   seine Form der letzten drei Spieltage angepasst.
 - **Aktivitätenfeed.** Alle Käufe und Verkäufe der Mitspieler und alles, was neu auf
   dem Markt liegt, in einem Zeitstrahl.
-- **Profil und Einstellungen** hinter dem Kreis oben rechts: dort steht, in wie vielen
-  Ligen man spielt, dort liegt die Abmeldung, und dort wählt man die Anzeige —
-  System, Hell oder Dunkel. Die Wahl bleibt auf dem Gerät.
+- **Die App in den Farben des eigenen Vereins.** Beim ersten Start wählt man seinen
+  Lieblingsverein aus der Liga; von da an sind Knöpfe, aktiver Reiter, Formationschips
+  und Profilkreis in Vereinsfarbe. Der Verein hängt am Konto, nicht an der Liga, und
+  lässt sich im Profil wechseln.
+- **Profil und Einstellungen** hinter dem Kreis oben rechts: dort steht der Verein, in
+  wie vielen Ligen man spielt, dort liegt die Abmeldung, und dort wählt man die
+  Anzeige — System, Hell oder Dunkel. Die Wahl bleibt auf dem Gerät.
 - **Punkte nach echten Spielen**, inklusive Prämie: 20.000 € je Spieltagspunkt.
 - **Punkte je Spiel pro Spieler.** Die Spielerseite listet jede Partie einzeln auf —
   Gegner, Ergebnis, Einsatzminuten und die Punkte daraus — dazu Summe und Schnitt.
@@ -57,6 +61,13 @@ Lauf aus, nicht zehn. Das spart eine ganze Betriebsschicht, hat aber einen Preis
 Tageslimit. Deshalb liegt die Vorsaison-Statistik, aus der die Startmarktwerte
 berechnet werden, als JSON am Spieler — eine Neukalibrierung der Formel kostet so
 keinen einzigen API-Aufruf.
+
+**Vereinsfarben stehen im Code.** Weder API-Football noch OpenLigaDB liefern sie, und
+eine Farbe ändert sich seltener als ein Kader — also eine Tabelle in
+`app/src/constants/vereinsfarben.ts`, je Verein ein Farbwert und die Schrift, die
+darauf lesbar ist (bei Dortmunds Gelb muss sie dunkel sein). Im Dunkelmodus wird eine
+sehr dunkle Vereinsfarbe aufgehellt, sonst verschwände ein marineblauer Knopf auf
+schwarzem Grund.
 
 **Zwei Datenquellen, bewusst.** Spieler und Statistiken kommen von API-Football, der
 Spielplan von OpenLigaDB. Grund: Im kostenlosen Tarif von API-Football ist nur ein

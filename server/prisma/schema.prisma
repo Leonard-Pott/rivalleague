@@ -14,6 +14,10 @@ model User {
   googleSub String?   @unique
   image     String?
   createdAt DateTime  @default(now())
+  /// Lieblingsverein. Faerbt die App und gehoert deshalb zum Nutzer, nicht zum
+  /// Manager: wer in drei Ligen spielt, hat trotzdem einen Verein.
+  favoriteTeamId Int?
+  favoriteTeam   Team? @relation(fields: [favoriteTeamId], references: [id], onDelete: SetNull)
   managers  Manager[]
 }
 
@@ -67,6 +71,7 @@ model Team {
   players     Player[]
   homeMatches Match[]  @relation("home")
   awayMatches Match[]  @relation("away")
+  fans        User[]
 }
 
 /// Spielplan aus OpenLigaDB. Die ganze Saison ist dort frei abrufbar - im

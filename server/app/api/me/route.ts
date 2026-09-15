@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { HttpError } from "@/lib/guards";
 import { handle } from "@/lib/http";
 
 export const GET = handle(async (req: Request) => {
@@ -10,7 +11,13 @@ export const GET = handle(async (req: Request) => {
     orderBy: { createdAt: "asc" },
   });
   return {
-    user: { id: user.id, name: user.name, image: user.image },
+    user: {
+      id: user.id,
+      name: user.name,
+      image: user.image,
+      /** Faerbt die App. Null heisst: noch nicht gewaehlt, die App fragt danach. */
+      favoriteTeamId: user.favoriteTeamId,
+    },
     leagues: managers.map((m) => ({
       leagueId: m.league.id,
       name: m.league.name,
@@ -20,4 +27,21 @@ export const GET = handle(async (req: Request) => {
       budget: m.budget,
     })),
   };
+});
+
+/** Lieblingsverein setzen oder wechseln. Mehr gibt es am Profil nicht zu aendern. */
+export const PATCH = handle(async (req: Request) => {
+  const user = await requireUser(req);
+  const { favoriteTeamId } = (await req.json()) as { favoriteTeamId?: number | null };
+
+  if (favoriteTeamId !== null && !Number.isInteger(favoriteTeamId)) {
+    throw new HttpError(400, "favoriteTeamId fehlt");
+  }
+  if (favoriteTeamId !== null) {
+    const team = await prisma.team.findUnique({ where: { id: favoriteTeamId } });
+    if (!team) throw new HttpError(404, "Verein nicht gefunden");
+  }
+
+  await prisma.user.update({ where: { id: user.id }, data: { favoriteTeamId } });
+  return { favoriteTeamId };
 });

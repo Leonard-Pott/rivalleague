@@ -6,16 +6,22 @@ import { ThemeProvider as ThemeModeProvider, useThemeMode } from "@/lib/theme";
 import { Loading } from "@/components/ui";
 
 function Gate() {
-  const { ready, token } = useSession();
+  const { ready, token, me } = useSession();
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
     if (!ready) return;
     const onLogin = segments[0] === "login";
-    if (!token && !onLogin) router.replace("/login");
-    if (token && onLogin) router.replace("/");
-  }, [ready, token, segments]);
+    const onVerein = segments[0] === "verein";
+    if (!token && !onLogin) return router.replace("/login");
+    if (token && onLogin) return router.replace("/");
+    // Ohne Lieblingsverein geht es einmal durch die Wahl - die Farbe der App
+    // haengt daran, und spaeter fragt niemand mehr danach.
+    if (token && me && me.user.favoriteTeamId === null && !onVerein) {
+      router.replace("/verein?erst=1");
+    }
+  }, [ready, token, me, segments]);
 
   if (!ready) return <Loading />;
 
@@ -24,6 +30,7 @@ function Gate() {
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="login" />
       <Stack.Screen name="settings" />
+      <Stack.Screen name="verein" />
       <Stack.Screen name="join/[code]" options={{ presentation: "modal" }} />
     </Stack>
   );
@@ -33,19 +40,21 @@ function Navigation() {
   const { scheme } = useThemeMode();
   return (
     <ThemeProvider value={scheme === "dark" ? DarkTheme : DefaultTheme}>
-      <SessionProvider>
-        <Gate />
-      </SessionProvider>
+      <Gate />
     </ThemeProvider>
   );
 }
 
+// Die Sitzung liegt aussen: die Vereinsfarbe haengt am angemeldeten Nutzer,
+// das Thema muss sie also lesen koennen.
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <ThemeModeProvider>
-        <Navigation />
-      </ThemeModeProvider>
+      <SessionProvider>
+        <ThemeModeProvider>
+          <Navigation />
+        </ThemeModeProvider>
+      </SessionProvider>
     </SafeAreaProvider>
   );
 }

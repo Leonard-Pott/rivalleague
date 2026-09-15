@@ -2,9 +2,17 @@
 // ponytail: doppelt gepflegt, shared package erst wenn die Typen auseinanderlaufen.
 
 export type Me = {
-  user: { id: string; name: string; image: string | null };
+  user: {
+    id: string;
+    name: string;
+    image: string | null;
+    /** Lieblingsverein; null heisst, die App fragt beim naechsten Start danach. */
+    favoriteTeamId: number | null;
+  };
   leagues: LeagueSummary[];
 };
+
+export type TeamSummary = { id: number; name: string; logoUrl: string | null };
 
 export type LeagueSummary = {
   leagueId: string;

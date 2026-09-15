@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import { Image, View, type ColorValue, type ImageSourcePropType } from "react-native";
-import { ACCENT, useColors } from "@/components/ui";
+import { useAkzent, useColors } from "@/components/ui";
 import { LeagueSwitcher } from "@/components/league-switcher";
 
 // Einfarbige PNGs, per tintColor eingefaerbt - damit folgt das Symbol dem
@@ -12,6 +12,7 @@ const icon = (src: ImageSourcePropType) =>
 
 export default function TabsLayout() {
   const c = useColors();
+  const akzent = useAkzent();
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
       <LeagueSwitcher />
@@ -19,7 +20,7 @@ export default function TabsLayout() {
         screenOptions={{
           headerShown: false,
           tabBarShowLabel: false,
-          tabBarActiveTintColor: ACCENT,
+          tabBarActiveTintColor: akzent.farbe,
           tabBarInactiveTintColor: c.textSecondary,
           tabBarStyle: { backgroundColor: c.background },
         }}

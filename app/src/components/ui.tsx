@@ -12,13 +12,15 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "@/constants/theme";
-import { useThemeMode } from "@/lib/theme";
+import { useAkzent, useThemeMode } from "@/lib/theme";
 
 export function useColors() {
   return Colors[useThemeMode().scheme];
 }
 
+/** Vorgabe ohne Lieblingsverein. Wer faerben will, nimmt useAkzent(). */
 export const ACCENT = "#208AEF";
+export { useAkzent };
 
 export function Screen({
   children,
@@ -107,6 +109,7 @@ export function Button({
   disabled?: boolean;
 }) {
   const c = useColors();
+  const akzent = useAkzent();
   const off = disabled || busy;
   return (
     <Pressable
@@ -115,18 +118,18 @@ export function Button({
       style={({ pressed }) => [
         styles.button,
         variant === "primary"
-          ? { backgroundColor: ACCENT }
+          ? { backgroundColor: akzent.farbe }
           : { backgroundColor: c.backgroundElement },
         (pressed || off) && { opacity: 0.6 },
       ]}
     >
       {busy ? (
-        <ActivityIndicator color={variant === "primary" ? "#fff" : c.text} />
+        <ActivityIndicator color={variant === "primary" ? akzent.text : c.text} />
       ) : (
         <Text
           style={[
             styles.buttonLabel,
-            { color: variant === "primary" ? "#fff" : c.text },
+            { color: variant === "primary" ? akzent.text : c.text },
           ]}
         >
           {label}

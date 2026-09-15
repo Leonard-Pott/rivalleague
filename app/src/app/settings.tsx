@@ -1,9 +1,12 @@
+import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
+import { api } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { useThemeMode, type ThemeMode } from "@/lib/theme";
 import { Profilkreis } from "@/components/league-switcher";
-import { ACCENT, Body, Button, Card, Screen, Title, useColors } from "@/components/ui";
+import { Body, Button, Card, Screen, Title, useAkzent, useColors } from "@/components/ui";
+import type { TeamSummary } from "@/types";
 
 const ANZEIGE: { mode: ThemeMode; label: string; hinweis: string }[] = [
   { mode: "system", label: "System", hinweis: "folgt dem Telefon" },
@@ -12,10 +15,28 @@ const ANZEIGE: { mode: ThemeMode; label: string; hinweis: string }[] = [
 ];
 
 export default function SettingsScreen() {
-  const { me, signOut } = useSession();
+  const { me, token, signOut } = useSession();
   const { mode, setMode } = useThemeMode();
   const router = useRouter();
   const c = useColors();
+  const akzent = useAkzent();
+  const [geladen, setGeladen] = useState<string | null>(null);
+  const vereinId = me?.user.favoriteTeamId ?? null;
+  const vereinsName = vereinId ? geladen : null;
+
+  // Nur fuer den Namen - die Farbe steht schon in der Tabelle.
+  useEffect(() => {
+    if (!vereinId) return;
+    let aktuell = true;
+    api<{ teams: TeamSummary[] }>("/api/teams", { token })
+      .then((r) => {
+        if (aktuell) setGeladen(r.teams.find((t) => t.id === vereinId)?.name ?? null);
+      })
+      .catch(() => {});
+    return () => {
+      aktuell = false;
+    };
+  }, [vereinId, token]);
 
   return (
     <Screen>
@@ -36,6 +57,21 @@ export default function SettingsScreen() {
       </View>
 
       <Card>
+        <Body dim>Verein</Body>
+        <View style={styles.verein}>
+          <View style={[styles.balken, { backgroundColor: akzent.farbe }]} />
+          <Body style={{ flex: 1 }}>
+            {vereinsName ?? "Noch keiner gewählt"}
+          </Body>
+        </View>
+        <Button
+          label={vereinsName ? "Verein wechseln" : "Verein wählen"}
+          variant="ghost"
+          onPress={() => router.push("/verein")}
+        />
+      </Card>
+
+      <Card>
         <Body dim>Anzeige</Body>
         <View style={styles.chips}>
           {ANZEIGE.map((a) => {
@@ -46,10 +82,10 @@ export default function SettingsScreen() {
                 onPress={() => setMode(a.mode)}
                 style={[
                   styles.chip,
-                  { backgroundColor: gewaehlt ? ACCENT : c.backgroundSelected },
+                  { backgroundColor: gewaehlt ? akzent.farbe : c.backgroundSelected },
                 ]}
               >
-                <Body style={{ color: gewaehlt ? "#fff" : c.text }}>{a.label}</Body>
+                <Body style={{ color: gewaehlt ? akzent.text : c.text }}>{a.label}</Body>
               </Pressable>
             );
           })}
@@ -79,6 +115,8 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   kopf: { flexDirection: "row", alignItems: "center", gap: 14 },
+  verein: { flexDirection: "row", alignItems: "center", gap: 10 },
+  balken: { width: 6, height: 26, borderRadius: 3 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 },
 });
