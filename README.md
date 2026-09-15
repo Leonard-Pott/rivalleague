@@ -7,7 +7,7 @@ aus den echten Spielen des Wochenendes.
 
 <p align="center">
   <img src="docs/screenshots/ranking.png" width="200" alt="Ranking mit Tabelle und Vermögensverlauf">
-  <img src="docs/screenshots/kader.png" width="200" alt="Kader mit Formation und leeren Plätzen">
+  <img src="docs/screenshots/kader.png" width="200" alt="Kader mit der Startelf auf dem Spielfeld">
   <img src="docs/screenshots/markt.png" width="200" alt="Transfermarkt mit Angeboten">
   <img src="docs/screenshots/aktivitaet.png" width="200" alt="Aktivitätenfeed">
 </p>
@@ -34,6 +34,9 @@ aus den echten Spielen des Wochenendes.
   seine Form der letzten drei Spieltage angepasst.
 - **Aktivitätenfeed.** Alle Käufe und Verkäufe der Mitspieler und alles, was neu auf
   dem Markt liegt, in einem Zeitstrahl.
+- **Profil und Einstellungen** hinter dem Kreis oben rechts: dort steht, in wie vielen
+  Ligen man spielt, dort liegt die Abmeldung, und dort wählt man die Anzeige —
+  System, Hell oder Dunkel. Die Wahl bleibt auf dem Gerät.
 - **Punkte nach echten Spielen**, inklusive Prämie: 20.000 € je Spieltagspunkt.
 - **Punkte je Spiel pro Spieler.** Die Spielerseite listet jede Partie einzeln auf —
   Gegner, Ergebnis, Einsatzminuten und die Punkte daraus — dazu Summe und Schnitt.

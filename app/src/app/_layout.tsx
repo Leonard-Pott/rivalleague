@@ -1,8 +1,8 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, useRouter, useSegments } from "expo-router";
 import { useEffect } from "react";
-import { useColorScheme } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { SessionProvider, useSession } from "@/lib/session";
+import { ThemeProvider as ThemeModeProvider, useThemeMode } from "@/lib/theme";
 import { Loading } from "@/components/ui";
 
 function Gate() {
@@ -23,20 +23,29 @@ function Gate() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="login" />
+      <Stack.Screen name="settings" />
       <Stack.Screen name="join/[code]" options={{ presentation: "modal" }} />
     </Stack>
   );
 }
 
+function Navigation() {
+  const { scheme } = useThemeMode();
+  return (
+    <ThemeProvider value={scheme === "dark" ? DarkTheme : DefaultTheme}>
+      <SessionProvider>
+        <Gate />
+      </SessionProvider>
+    </ThemeProvider>
+  );
+}
+
 export default function RootLayout() {
-  const scheme = useColorScheme();
   return (
     <SafeAreaProvider>
-      <ThemeProvider value={scheme === "dark" ? DarkTheme : DefaultTheme}>
-        <SessionProvider>
-          <Gate />
-        </SessionProvider>
-      </ThemeProvider>
+      <ThemeModeProvider>
+        <Navigation />
+      </ThemeModeProvider>
     </SafeAreaProvider>
   );
 }

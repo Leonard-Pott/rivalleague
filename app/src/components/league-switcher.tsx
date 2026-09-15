@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Modal, Pressable, ScrollView, Share, StyleSheet, View } from "react-native";
+import { Image, Modal, Pressable, ScrollView, Share, StyleSheet, View } from "react-native";
 import * as Linking from "expo-linking";
+import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api } from "@/lib/api";
 import { useSession } from "@/lib/session";
-import { Body, Button, ErrorText, Field, useColors } from "@/components/ui";
+import { ACCENT, Body, Button, ErrorText, Field, useColors } from "@/components/ui";
 
 /**
  * Kopfzeile ueber allen Tabs: zeigt die aktive Liga und wechselt sie.
@@ -12,7 +13,8 @@ import { Body, Button, ErrorText, Field, useColors } from "@/components/ui";
  * Ranking, Kader, Markt und Aktivitaeten stehen, und kein eigener Ort.
  */
 export function LeagueSwitcher() {
-  const { me, token, activeLeagueId, setActiveLeague, refresh, signOut } = useSession();
+  const { me, token, activeLeagueId, setActiveLeague, refresh } = useSession();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const c = useColors();
   const [offen, setOffen] = useState(false);
@@ -43,13 +45,23 @@ export function LeagueSwitcher() {
 
   return (
     <View style={{ paddingTop: insets.top, backgroundColor: c.background }}>
-      <Pressable
-        onPress={() => setOffen(true)}
-        style={({ pressed }) => [styles.bar, pressed && { opacity: 0.6 }]}
-      >
-        <Body style={styles.ligaName}>{aktiv?.name ?? "Keine Liga"}</Body>
-        <Body dim>▾</Body>
-      </Pressable>
+      <View style={styles.bar}>
+        <Pressable
+          onPress={() => setOffen(true)}
+          style={({ pressed }) => [styles.liga, pressed && { opacity: 0.6 }]}
+        >
+          <Body style={styles.ligaName}>{aktiv?.name ?? "Keine Liga"}</Body>
+          <Body dim>▾</Body>
+        </Pressable>
+
+        <Pressable
+          onPress={() => router.push("/settings")}
+          accessibilityLabel="Profil und Einstellungen"
+          style={({ pressed }) => pressed && { opacity: 0.6 }}
+        >
+          <Profilkreis name={me?.user.name} bild={me?.user.image ?? null} />
+        </Pressable>
+      </View>
 
       <Modal
         visible={offen}
@@ -116,17 +128,30 @@ export function LeagueSwitcher() {
             )}
 
             <Button label="Schließen" variant="ghost" onPress={() => setOffen(false)} />
-            <Button
-              label="Abmelden"
-              variant="ghost"
-              onPress={async () => {
-                setOffen(false);
-                await signOut();
-              }}
-            />
           </ScrollView>
         </View>
       </Modal>
+    </View>
+  );
+}
+
+/** Foto, sonst der Anfangsbuchstabe - eine leere Scheibe waere kein Profil. */
+export function Profilkreis({
+  name,
+  bild,
+  groesse = 34,
+}: {
+  name?: string;
+  bild?: string | null;
+  groesse?: number;
+}) {
+  const kreis = { width: groesse, height: groesse, borderRadius: groesse / 2 };
+  if (bild) return <Image source={{ uri: bild }} style={kreis} />;
+  return (
+    <View style={[kreis, styles.kreis]}>
+      <Body style={[styles.initiale, { fontSize: groesse * 0.45 }]}>
+        {(name ?? "?").trim().charAt(0).toUpperCase()}
+      </Body>
     </View>
   );
 }
@@ -139,6 +164,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
+  liga: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
+  kreis: { backgroundColor: ACCENT, alignItems: "center", justifyContent: "center" },
+  initiale: { color: "#fff", fontWeight: "700" },
   ligaName: { fontSize: 17, fontWeight: "700" },
   backdrop: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "#0008" },
   sheet: { maxHeight: "85%", borderBottomLeftRadius: 18, borderBottomRightRadius: 18 },

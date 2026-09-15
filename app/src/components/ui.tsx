@@ -6,17 +6,16 @@ import {
   Text,
   TextInput,
   View,
-  useColorScheme,
   type TextInputProps,
   type RefreshControlProps,
   type ViewProps,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "@/constants/theme";
+import { useThemeMode } from "@/lib/theme";
 
 export function useColors() {
-  const scheme = useColorScheme();
-  return Colors[scheme === "dark" ? "dark" : "light"];
+  return Colors[useThemeMode().scheme];
 }
 
 export const ACCENT = "#208AEF";
