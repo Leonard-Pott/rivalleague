@@ -127,6 +127,8 @@ export default function SquadScreen() {
   const kette = useRef<Promise<void>>(Promise.resolve());
   /** Platz, fuer den gerade ein Spieler gesucht wird. */
   const [wahl, setWahl] = useState<{ pos: Position; index: number } | null>(null);
+  /** Spieler aus der Kaderliste, dessen Menue offen ist. */
+  const [menue, setMenue] = useState<SquadPlayer | null>(null);
   const [error, setError] = useState("");
   const [hinweis, setHinweis] = useState("");
   const [refreshing, setRefreshing] = useState(false);
@@ -220,29 +222,7 @@ export default function SquadScreen() {
     speichere(neu, f);
   }
 
-  /**
-   * Drei Eintraege und keiner mehr: Android zeigt von einem Alert hoechstens
-   * drei Knoepfe, ein vierter faellt kommentarlos weg - und das waere hier
-   * ausgerechnet "Abbrechen".
-   */
-  function menue(p: SquadPlayer) {
-    Alert.alert(
-      p.name,
-      `${p.team.name} · ${euro(p.marketValue)} · ${p.gesamtpunkte} Punkte${
-        p.schnitt === null ? "" : ` (Ø ${p.schnitt})`
-      }`,
-      [
-        {
-          text: "Details ansehen",
-          onPress: () =>
-            router.push({ pathname: "/player/[id]", params: { id: String(p.playerId) } }),
-        },
-        { text: "Zum Verkauf anbieten", onPress: () => verkaufen(p) },
-        { text: "Abbrechen", style: "cancel" },
-      ],
-    );
-  }
-
+  /** Rueckfrage, kein Menue - dafuer ist der System-Alert genau richtig. */
   function verkaufen(p: SquadPlayer) {
     Alert.alert(
       `${p.name} verkaufen?`,
@@ -381,7 +361,7 @@ export default function SquadScreen() {
             {gruppe.map((p) => {
               const drin = aufgestellt.includes(p.playerId);
               return (
-                <Pressable key={p.playerId} onPress={() => menue(p)}>
+                <Pressable key={p.playerId} onPress={() => setMenue(p)}>
                   <Card
                     style={
                       drin
@@ -398,19 +378,15 @@ export default function SquadScreen() {
         );
       })}
 
-      <Modal
-        visible={wahl !== null}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setWahl(null)}
+      <Bogen
+        offen={wahl !== null}
+        schliessen={() => setWahl(null)}
+        titel={
+          wahl
+            ? `${LABEL[wahl.pos]} ${besetzung[wahl.pos][wahl.index] ? "austauschen" : "besetzen"}`
+            : ""
+        }
       >
-        <Pressable style={styles.backdrop} onPress={() => setWahl(null)} />
-        <View style={[styles.sheet, { backgroundColor: c.background }]}>
-          <ScrollView contentContainerStyle={styles.sheetInner}>
-            <Body style={styles.gross}>
-              {wahl ? LABEL[wahl.pos] : ""}
-              {wahl && besetzung[wahl.pos][wahl.index] ? " austauschen" : " besetzen"}
-            </Body>
             {auswahl.length === 0 && (
               <Body dim>
                 Kein freier Spieler auf dieser Position. Kauf im Transfermarkt nach.
@@ -440,10 +416,68 @@ export default function SquadScreen() {
               />
             )}
             <Button label="Abbrechen" variant="ghost" onPress={() => setWahl(null)} />
-          </ScrollView>
-        </View>
-      </Modal>
+      </Bogen>
+
+      {/* Derselbe Bogen fuer den Spieler aus der Liste - ein System-Alert sah
+          daneben wie ein Fremdkoerper aus. */}
+      <Bogen
+        offen={menue !== null}
+        schliessen={() => setMenue(null)}
+        titel={menue?.name ?? ""}
+      >
+        {menue && (
+          <>
+            <Card>
+              <SpielerZeile p={menue} />
+            </Card>
+            <Button
+              label="Details ansehen"
+              onPress={() => {
+                const id = String(menue.playerId);
+                setMenue(null);
+                router.push({ pathname: "/player/[id]", params: { id } });
+              }}
+            />
+            <Button
+              label="Zum Verkauf anbieten"
+              variant="ghost"
+              onPress={() => {
+                const p = menue;
+                setMenue(null);
+                verkaufen(p);
+              }}
+            />
+          </>
+        )}
+        <Button label="Abbrechen" variant="ghost" onPress={() => setMenue(null)} />
+      </Bogen>
     </Screen>
+  );
+}
+
+/** Der Bogen von unten: eine Ueberschrift, Inhalt, und aus ist er beim Tippen daneben. */
+function Bogen({
+  offen,
+  schliessen,
+  titel,
+  children,
+}: {
+  offen: boolean;
+  schliessen: () => void;
+  titel: string;
+  children: React.ReactNode;
+}) {
+  const c = useColors();
+  return (
+    <Modal visible={offen} transparent animationType="slide" onRequestClose={schliessen}>
+      <Pressable style={styles.backdrop} onPress={schliessen} />
+      <View style={[styles.sheet, { backgroundColor: c.background }]}>
+        <ScrollView contentContainerStyle={styles.sheetInner}>
+          <Body style={styles.gross}>{titel}</Body>
+          {children}
+        </ScrollView>
+      </View>
+    </Modal>
   );
 }
 
@@ -467,10 +501,12 @@ function SpielerZeile({ p }: { p: SquadPlayer }) {
             : ""}
         </Body>
       </View>
+      {/* Ohne erfassten Spieltag ist eine 0 gelogen: sie hiesse, er habe
+          gespielt und nichts geholt. */}
       <View style={{ alignItems: "flex-end" }}>
-        <Body style={styles.punkte}>{p.gesamtpunkte}</Body>
+        <Body style={styles.punkte}>{p.spieltage === 0 ? "–" : p.gesamtpunkte}</Body>
         <Body dim>
-          {p.schnitt === null ? "Punkte" : `Ø ${p.schnitt} · ${p.spieltage} Sp.`}
+          {p.spieltage === 0 ? "noch kein Spiel" : `Ø ${p.schnitt} · ${p.spieltage} Sp.`}
         </Body>
       </View>
     </View>
