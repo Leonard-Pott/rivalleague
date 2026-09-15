@@ -1,7 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  ANGEBOTE_MIN,
   MAX_SQUAD,
+  marktGroesse,
   planTransfers,
   type ManagerState,
   type PendingListing,
@@ -162,4 +164,11 @@ test("Ergebnis haengt nicht von der Eingabereihenfolge ab", () => {
   const backward = planTransfers([...ls].reverse(), ms);
   assert.deepEqual(forward, backward);
   assert.equal(forward.length, 1);
+});
+
+test("Markt waechst mit der Rundengroesse, faellt aber nie unter das Minimum", () => {
+  assert.equal(marktGroesse(1), ANGEBOTE_MIN);
+  assert.equal(marktGroesse(2), ANGEBOTE_MIN);
+  assert.equal(marktGroesse(6), 24);
+  assert.ok(marktGroesse(10) > marktGroesse(6));
 });

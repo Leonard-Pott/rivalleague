@@ -1,5 +1,19 @@
 export const MAX_SQUAD = 24;
 
+/** Freie Spieler, die je Mitspieler auf dem Markt liegen sollen. */
+export const ANGEBOTE_PRO_MANAGER = 4;
+/** Untergrenze, damit auch eine Liga zu zweit eine Auswahl hat. */
+export const ANGEBOTE_MIN = 8;
+
+/**
+ * Wie viele freie Spieler der Markt einer Liga zeigt. Waechst mit der Runde:
+ * bei acht Angeboten und sechs Mitspielern greift jeder nach denselben
+ * Spielern, und wer zuletzt schaut, findet nichts mehr.
+ */
+export function marktGroesse(managerAnzahl: number): number {
+  return Math.max(ANGEBOTE_MIN, managerAnzahl * ANGEBOTE_PRO_MANAGER);
+}
+
 export type PendingBid = {
   managerId: string;
   amount: number;

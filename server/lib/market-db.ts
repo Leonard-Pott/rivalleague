@@ -1,9 +1,11 @@
 import { prisma } from "./db";
 import { nextMarketClose } from "./marketclock.ts";
-import { planTransfers, type ManagerState, type PendingListing } from "./market.ts";
-
-/** So viele freie Spieler stehen gleichzeitig auf dem Markt. */
-export const FREIE_SPIELER = 8;
+import {
+  marktGroesse,
+  planTransfers,
+  type ManagerState,
+  type PendingListing,
+} from "./market.ts";
 
 /**
  * Fuellt den Markt mit freien Spielern auf. Braucht keinen Zeitplan: es wird
@@ -12,15 +14,20 @@ export const FREIE_SPIELER = 8;
  */
 export async function ensureFreeAgents(
   leagueId: string,
-  anzahl = FREIE_SPIELER,
+  anzahl?: number,
 ): Promise<number> {
   const league = await prisma.league.findUnique({ where: { id: leagueId } });
   if (!league) return 0;
 
+  // Ohne Vorgabe richtet sich die Auslage nach der Rundengroesse - ein
+  // Beitritt vergroessert den Markt beim naechsten Aufruf von selbst.
+  const ziel =
+    anzahl ?? marktGroesse(await prisma.manager.count({ where: { leagueId } }));
+
   const offen = await prisma.listing.count({
     where: { leagueId, sellerId: null, resolvedAt: null },
   });
-  const fehlend = anzahl - offen;
+  const fehlend = ziel - offen;
   if (fehlend <= 0) return 0;
 
   // Weder im Kader eines Managers noch bereits auf dem Markt.
