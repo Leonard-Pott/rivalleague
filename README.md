@@ -115,7 +115,7 @@ Die Routen darüber sind dünn und machen nur die Datenbankarbeit.
 
 | Bereich  | Technik |
 |----------|---------|
-| App      | React Native, Expo SDK 57, Expo Router, TypeScript |
+| App      | React Native, Expo SDK 58, Expo Router, TypeScript |
 | Backend  | Next.js 16 (App Router, Route Handlers), TypeScript |
 | Daten    | PostgreSQL 17, Prisma 7 |
 | Auth     | JWT (jose), Bearer-Token |

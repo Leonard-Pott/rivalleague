@@ -8,7 +8,9 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export function useTheme() {
   const scheme = useColorScheme();
-  const theme = scheme === 'unspecified' ? 'light' : scheme;
+  // Seit RN 0.88 liefert useColorScheme nur noch 'light', 'dark' oder null;
+  // null heisst, die Plattform kennt kein Schema - dann bleibt es hell.
+  const theme = scheme ?? 'light';
 
   return Colors[theme];
 }
