@@ -23,3 +23,5 @@ graphify-out/
 # Lokale Werkzeug-Konfiguration mit absoluten Pfaden
 /.claude/
 /CLAUDE.md
+/AGENTS.md
+/.codex/
